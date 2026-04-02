@@ -275,24 +275,25 @@
         }
 
         /* 分层动画 - 不同状态不同动画时长 */
-        .bar.single {
+        /* 使用更高特异性确保样式覆盖 */
+        .bar.bar.single {
             animation: fadeIn 0.3s ease;
         }
 
-        .bar.wait-to-match {
+        .bar.bar.wait-to-match {
             animation: slideUp 0.4s ease;
         }
 
-        .bar.married {
+        .bar.bar.married {
             animation: barAppear 0.5s ease;
         }
 
-        .bar.quarrel,
-        .bar.quarrel-wait {
+        .bar.bar.quarrel,
+        .bar.bar.quarrel-wait {
             animation: shake 0.6s ease;
         }
 
-        .bar.cheating {
+        .bar.bar.cheating {
             animation: pulse 0.5s ease;
         }
 
@@ -344,23 +345,6 @@
             }
         }
 
-        .pair-container.paired {
-            position: relative;
-        }
-
-        .pair-container.paired::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -10px;
-            right: -10px;
-            bottom: 0;
-            border: 2px dashed var(--color-success);
-            border-radius: 12px;
-            z-index: 1;
-            animation: pulse 2s infinite;
-        }
-
         .bar-value {
             position: absolute;
             top: -25px;
@@ -370,13 +354,37 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
-        /* Bar 状态颜色 */
-        .bar.single { background: linear-gradient(180deg, #868e96, #495057); }
-        .bar.wait-to-match { background: linear-gradient(135deg, var(--color-warning), #fab005); }
-        .bar.married { background: linear-gradient(180deg, var(--color-danger), #c92a2a); }
-        .bar.quarrel,
-        .bar.quarrel-wait { background: linear-gradient(180deg, #ff8787, #e03131); }
-        .bar.cheating { background: linear-gradient(180deg, #da77f2, #9c36b5); }
+        /* 并排显示的配对容器 */
+        .pair-wrapper {
+            display: flex;
+            gap: 4px;
+            align-items: flex-end;
+        }
+
+        .pair-wrapper.paired {
+            position: relative;
+            padding: 0 8px;
+        }
+
+        .pair-wrapper.paired::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: 0;
+            right: 0;
+            bottom: -5px;
+            border: 2px dashed var(--color-success);
+            border-radius: 12px;
+            z-index: 10;
+            animation: pulse 2s infinite;
+        }
+
+        .bar-slot-inline {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+        }
 
         /* ============================================
            POOL - 匹配池
@@ -413,6 +421,79 @@
         .pool-item.eliminated {
             background: linear-gradient(135deg, #868e96, #495057);
             opacity: 0.5;
+        }
+
+        /* ============================================
+           TOOLTIP - 悬浮提示框
+           ============================================ */
+        .data-tooltip {
+            position: fixed;
+            background: linear-gradient(135deg, rgba(30, 30, 63, 0.95), rgba(22, 33, 62, 0.95));
+            border: 1px solid rgba(245, 87, 108, 0.3);
+            border-radius: var(--border-radius-sm);
+            padding: 12px 16px;
+            min-width: 220px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .data-tooltip.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .tooltip-header {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--color-accent-pink);
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 0.85rem;
+        }
+
+        .tooltip-label {
+            color: var(--color-text-muted);
+        }
+
+        .tooltip-value {
+            color: var(--color-text);
+            font-weight: 500;
+        }
+
+        .tooltip-value.positive {
+            color: #4ade80;
+        }
+
+        .tooltip-value.negative {
+            color: #ff6b6b;
+        }
+
+        .tooltip-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 8px 0;
+        }
+
+        .tooltip-score {
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 8px;
+            background: rgba(245, 87, 108, 0.1);
+            border-radius: var(--border-radius-xs);
+            margin-top: 8px;
         }
 
         /* ============================================
@@ -860,16 +941,20 @@
                 </div>
                 <div class="modal-legend">
                     <div class="modal-legend-item">
-                        <div class="modal-legend-color" style="background: linear-gradient(180deg, #ff6b6b, #c92a2a);"></div>
+                        <div class="modal-legend-color" style="background: linear-gradient(180deg, #868e96, #495057);"></div>
+                        <span>单身（Single）</span>
+                    </div>
+                    <div class="modal-legend-item">
+                        <div class="modal-legend-color" style="background: linear-gradient(180deg, var(--color-danger), #c92a2a);"></div>
                         <span>已婚（Married）</span>
+                    </div>
+                    <div class="modal-legend-item">
+                        <div class="modal-legend-color" style="background: linear-gradient(135deg, var(--color-warning), #fab005);"></div>
+                        <span>等待配对（Wait）</span>
                     </div>
                     <div class="modal-legend-item">
                         <div class="modal-legend-color" style="background: linear-gradient(180deg, #ff8787, #e03131);"></div>
                         <span>争吵中（Quarrel）</span>
-                    </div>
-                    <div class="modal-legend-item">
-                        <div class="modal-legend-color" style="background: linear-gradient(135deg, #ffd43b, #fab005);"></div>
-                        <span>等待配对（Wait Pool）</span>
                     </div>
                     <div class="modal-legend-item">
                         <div class="modal-legend-color" style="background: linear-gradient(180deg, #da77f2, #9c36b5);"></div>
@@ -955,9 +1040,9 @@
             QUARREL_RATE: 0.6,                 // 争吵概率
 
             // 离婚倾向配置
-            DIVORCE_TREND_INCREMENT: 20,       // 每次争吵增加离婚倾向
-            DIVORCE_NATURAL_GROWTH: 5,        // 每回合自然增长离婚倾向
-            DIVORCE_THRESHOLD: 100,            // 离婚阈值
+            DIVORCE_TREND_INCREMENT: 35,       // 每次争吵增加离婚倾向
+            DIVORCE_NATURAL_GROWTH: 8,        // 每回合自然增长离婚倾向
+            DIVORCE_THRESHOLD: 70,            // 离婚阈值（降低让离婚更容易发生）
 
             // 回合配置
             PAIR_BAN_ROUNDS: 12,               // 禁止配对回合数
@@ -986,7 +1071,8 @@
             SINGLE: 'single',                 // 单身
             MARRIED: 'married',               // 已婚
             WAIT_TO_MATCH: 'wait-to-match',   // 等待配对
-            QUARREL_WAIT: 'quarrel-wait'      // 争吵后等待（冷静期）
+            QUARREL_WAIT: 'quarrel-wait',     // 争吵后等待（冷静期）
+            CHEATING: 'cheating'              // 出轨中（颜色会褪色）
         };
 
         /* ============================================
@@ -999,11 +1085,28 @@
                 this.id = Date.now() + Math.floor(Math.random() * 10000);
                 this.status = Status.SINGLE;
                 this.partner = null;
-                this.divorceTrend = 0;         // 离婚倾向 0-100
+                this.divorceTrend = 0;         // 离婚倾向 0-100，影响颜色深度
                 this.pairHistory = [];         // 配对历史记录
                 this.bannedWith = {};          // 禁止配对的对象 { personId: roundNumber }
                 this.quarrelWaitRounds = 0;    // 争吵后等待回合数
                 this.divorcedThisRound = false; // 本回合是否刚离婚
+                this.justPaired = false;       // 本回合是否刚配对（防止立即出轨）
+                this.cheatingStartRound = 0;   // 开始出轨的回合（用于计算褪色）
+                this.currentRound = 0;          // 当前回合（用于计算颜色）
+                
+                // 统计字段（用于计算婚姻稳定加权数）
+                this.totalMarriedRounds = 0;    // 总婚姻维持回合数
+                this.totalQuarrelRounds = 0;    // 总争吵回合数
+                this.cheatingCount = 0;         // 出轨次数
+                this.marriageStartRound = 0;    // 当前婚姻开始回合
+                this.quarrelStartRound = 0;     // 当前争吵开始回合
+            }
+            
+            // 计算婚姻稳定加权数
+            // 公式: (0.4*婚姻维持回合 - 0.2*争吵回合 - 0.4*出轨次数) * (1/3) * 离婚率
+            calculateStabilityScore(divorceRate) {
+                const score = (0.4 * this.totalMarriedRounds - 0.2 * this.totalQuarrelRounds - 0.4 * this.cheatingCount) * (1/3) * divorceRate;
+                return score.toFixed(2);
             }
         }
 
@@ -1066,18 +1169,138 @@
                 this._processRound();
                 this._checkSorting();
 
-                return {
+                const result = {
                     round: this.roundNumber,
                     eliminated: this.eliminated.map(p => ({ id: p.id, value: p.value })),
-                    married: this.married.map(pair => [
-                        { id: pair[0].id, value: pair[0].value, status: pair[0].status },
-                        { id: pair[1].id, value: pair[1].value, status: pair[1].status }
-                    ]),
-                    pool: this.pool.map(p => ({ id: p.id, value: p.value })),
+                    married: this.married.map(pair => {
+                        const s1 = pair[0].status;
+                        const s2 = pair[1].status;
+                        return [
+                            {
+                                id: pair[0].id,
+                                value: pair[0].value,
+                                status: typeof s1 === 'object' ? s1.value : s1,
+                                divorceTrend: pair[0].divorceTrend,
+                                cheatingStartRound: pair[0].cheatingStartRound,
+                                currentRound: this.roundNumber
+                            },
+                            {
+                                id: pair[1].id,
+                                value: pair[1].value,
+                                status: typeof s2 === 'object' ? s2.value : s2,
+                                divorceTrend: pair[1].divorceTrend,
+                                cheatingStartRound: pair[1].cheatingStartRound,
+                                currentRound: this.roundNumber
+                            }
+                        ];
+                    }),
+                    pool: this.pool.map(p => {
+                        const s = p.status;
+                        return {
+                            id: p.id,
+                            value: p.value,
+                            status: typeof s === 'object' ? s.value : s,
+                            divorceTrend: p.divorceTrend
+                        };
+                    }),
                     sortSucceeded: this.sortSucceeded,
                     newEvents: this.events.slice(-5),
                     allEvents: [...this.events]
                 };
+
+                // 数据完整性检查
+                this._checkDataIntegrity();
+
+                return result;
+            }
+
+            /* ----------------------------------------
+               数据完整性检查
+               确保所有人员都在正确的位置，没有丢失
+               ---------------------------------------- */
+            _checkDataIntegrity() {
+                const marriedCount = this.married.length * 2;
+                const poolCount = this.pool.length;
+                const eliminatedCount = this.eliminated.length;
+                const total = marriedCount + poolCount + eliminatedCount;
+
+                // 检查重复
+                const idCounts = {};
+                const idLocations = {}; // 记录每个ID的位置
+                this.married.forEach((pair, i) => {
+                    idCounts[pair[0].id] = (idCounts[pair[0].id] || 0) + 1;
+                    idCounts[pair[1].id] = (idCounts[pair[1].id] || 0) + 1;
+                    idLocations[pair[0].id] = `married[${i}][0]`;
+                    idLocations[pair[1].id] = `married[${i}][1]`;
+                });
+                this.pool.forEach((p, i) => {
+                    idCounts[p.id] = (idCounts[p.id] || 0) + 1;
+                    idLocations[p.id] = (idLocations[p.id] ? idLocations[p.id] + ',' : '') + `pool[${i}]`;
+                });
+                this.eliminated.forEach((p, i) => {
+                    idCounts[p.id] = (idCounts[p.id] || 0) + 1;
+                    idLocations[p.id] = (idLocations[p.id] ? idLocations[p.id] + ',' : '') + `eliminated[${i}]`;
+                });
+
+                // 处理重复（保留 married 优先）
+                const duplicates = Object.entries(idCounts).filter(([id, count]) => count > 1);
+                if (duplicates.length > 0) {
+                    console.warn(`发现 ${duplicates.length} 个重复，自动修复中...`);
+                    duplicates.forEach(([id, count]) => {
+                        const person = this.people.find(p => p.id == id);
+                        const locations = idLocations[id].split(',');
+                        const inMarried = locations.some(loc => loc.includes('married'));
+                        
+                        if (inMarried) {
+                            // 如果在 married 中，从 pool 中移除
+                            this.pool = this.pool.filter(p => p.id != id);
+                            console.warn(`  修复: ${person?.value} 保留在 married，从 pool 移除`);
+                        } else {
+                            // 如果不在 married 中，保留第一个出现的位置，移除其他
+                            const firstLoc = locations[0];
+                            if (firstLoc.includes('pool')) {
+                                // 保留 pool 中的第一个，移除其他 pool 中的
+                                let foundFirst = false;
+                                this.pool = this.pool.filter(p => {
+                                    if (p.id == id) {
+                                        if (foundFirst) return false;
+                                        foundFirst = true;
+                                    }
+                                    return true;
+                                });
+                            }
+                        }
+                    });
+                }
+
+                // 重新计算
+                const newMarriedCount = this.married.length * 2;
+                const newPoolCount = this.pool.length;
+                const newEliminatedCount = this.eliminated.length;
+                const newTotal = newMarriedCount + newPoolCount + newEliminatedCount;
+
+                if (newTotal !== this.people.length) {
+                    console.error(`数据异常！总人数: ${newTotal}, 期望: ${this.people.length}`);
+                    console.error(`  Married: ${newMarriedCount}, Pool: ${newPoolCount}, Eliminated: ${newEliminatedCount}`);
+
+                    // 找出丢失的人
+                    const allIds = new Set();
+                    this.married.forEach(pair => {
+                        allIds.add(pair[0].id);
+                        allIds.add(pair[1].id);
+                    });
+                    this.pool.forEach(p => allIds.add(p.id));
+                    this.eliminated.forEach(p => allIds.add(p.id));
+
+                    const lost = this.people.filter(p => !allIds.has(p.id));
+                    console.error('丢失的人员:', JSON.stringify(lost.map(p => ({ id: p.id, value: p.value, status: p.status })), null, 2));
+
+                    // 自动修复：将丢失的人添加到 pool
+                    lost.forEach(p => {
+                        this._moveToPool(p);
+                        console.log(`已修复: 将 ${p.value} 添加到 pool`);
+                    });
+                }
             }
 
             /* ----------------------------------------
@@ -1088,8 +1311,12 @@
                 const marriedPairs = this.married.length;
                 this.quarrelQuota = Math.max(1, Math.ceil(marriedPairs / 3));
 
-                // 重置所有人的离婚标志
-                this.people.forEach(p => p.divorcedThisRound = false);
+                // 重置所有人的离婚标志和刚配对标志，并更新当前回合
+                this.people.forEach(p => {
+                    p.divorcedThisRound = false;
+                    p.justPaired = false;
+                    p.currentRound = this.roundNumber;
+                });
 
                 // 减少争吵等待回合数，恢复 MARRIED 状态
                 this._restoreQuarrelWaitStatus();
@@ -1113,6 +1340,11 @@
                         p.quarrelWaitRounds--;
                         if (p.quarrelWaitRounds === 0 && p.status === Status.QUARREL_WAIT) {
                             p.status = Status.MARRIED;
+                            // 统计争吵回合数
+                            if (p.quarrelStartRound > 0) {
+                                p.totalQuarrelRounds += this.roundNumber - p.quarrelStartRound;
+                                p.quarrelStartRound = 0;
+                            }
                         }
                     }
                 });
@@ -1164,14 +1396,62 @@
             }
 
             /* ----------------------------------------
-               创建配对
-               设置双方状态和关系
+               统一方法：将人员移动到池
+               确保人员从 married 中移除并添加到 pool
+               ---------------------------------------- */
+            _moveToPool(person) {
+                if (!person) return;
+                
+                // 从 married 中移除包含此人的配对
+                this.married = this.married.filter(pair => {
+                    return pair[0].id !== person.id && pair[1].id !== person.id;
+                });
+                
+                // 从 pool 中移除重复（如果存在）
+                this.pool = this.pool.filter(p => p.id !== person.id);
+                
+                // 重置人员状态
+                person.status = Status.WAIT_TO_MATCH;
+                person.partner = null;
+                
+                // 添加到 pool
+                this.pool.push(person);
+            }
+
+            /* ----------------------------------------
+               统一方法：创建配对
+               设置双方状态和关系，确保数据一致性
                ---------------------------------------- */
             _createPair(p1, p2) {
+                // 防止自己和自己配对
+                if (p1.id === p2.id) {
+                    this._addEvent(`错误：无法自己和自己配对 ${p1.value}`);
+                    return;
+                }
+                
+                // 检查两人是否已在 married 中
+                const p1InMarried = this.married.some(m => m[0].id === p1.id || m[1].id === p1.id);
+                const p2InMarried = this.married.some(m => m[0].id === p2.id || m[1].id === p2.id);
+                
+                if (p1InMarried || p2InMarried) {
+                    this._addEvent(`错误：${p1.value} 或 ${p2.value} 已在配对中`);
+                    // 将未配对的人移到 pool
+                    if (!p1InMarried) this._moveToPool(p1);
+                    if (!p2InMarried) this._moveToPool(p2);
+                    return;
+                }
+                
+                // 从 pool 中移除（如果存在）
+                this.pool = this.pool.filter(p => p.id !== p1.id && p.id !== p2.id);
+
                 p1.status = Status.MARRIED;
                 p2.status = Status.MARRIED;
                 p1.partner = p2;
                 p2.partner = p1;
+                p1.justPaired = true;
+                p2.justPaired = true;
+                p1.marriageStartRound = this.roundNumber;
+                p2.marriageStartRound = this.roundNumber;
                 this.married.push([p1, p2]);
                 this._addEvent(`配对成功: ${p1.value} <-> ${p2.value}`);
                 this._recordPairHistory(p1, p2);
@@ -1186,10 +1466,12 @@
                4. 修复主表格
                ---------------------------------------- */
             _processLaterRounds() {
+                console.log(`[_processLaterRounds] 开始第 ${this.roundNumber} 回合后续处理`);
                 this._processPoolPairing();     // 匹配池内配对
                 this._processCheating();        // 处理出轨
                 this._processDivorceTrend();    // 处理离婚倾向
                 this._processMainTableRepairing(); // 修复主表格
+                console.log(`[_processLaterRounds] 结束第 ${this.roundNumber} 回合后续处理`);
             }
 
             /* ----------------------------------------
@@ -1197,6 +1479,16 @@
                从池中取出状态为 WAIT_TO_MATCH 的人进行配对
                ---------------------------------------- */
             _processPoolPairing() {
+                // 移除池中的重复人员（根据 ID）
+                const seenIds = new Set();
+                this.pool = this.pool.filter(p => {
+                    if (seenIds.has(p.id)) {
+                        return false; // 移除重复
+                    }
+                    seenIds.add(p.id);
+                    return true;
+                });
+
                 if (this.pool.length < 2) {
                     this._addEvent(`匹配池：待配对0人，非待配对${this.pool.length}人`);
                     return;
@@ -1205,13 +1497,18 @@
                 const toPair = [];
                 const remaining = [];
 
-                // 分离能配对和不能配对的人
+                // 分离能配对和不能配对的人，并更新当前回合
                 this.pool.forEach(p => {
+                    p.currentRound = this.roundNumber;
                     // 确保池中的人状态正确
                     if (p.status !== Status.WAIT_TO_MATCH) {
                         p.status = Status.WAIT_TO_MATCH;
                     }
-                    // 本回合刚离婚的人不能配对
+                    // 清除上回合的离婚标记
+                    if (p.divorcedThisRound) {
+                        p.divorcedThisRound = false;
+                    }
+                    // 本回合刚离婚的人不能配对（但标记已清除，所以只有本回合离婚的才会被排除）
                     if (p.status === Status.WAIT_TO_MATCH && !p.divorcedThisRound) {
                         toPair.push(p);
                     } else {
@@ -1222,23 +1519,32 @@
                 this._addEvent(`匹配池：待配对${toPair.length}人，非待配对${remaining.length}人`);
 
                 // 两两配对
+                const pairedIds = new Set();
                 for (let i = 0; i < toPair.length; i += 2) {
                     const p1 = toPair[i];
                     const p2 = toPair[i + 1];
 
                     if (p2) {
+                        // 防止自己和自己配对
+                        if (p1.id === p2.id) {
+                            remaining.push(p1);
+                            continue;
+                        }
                         // 检查是否被禁止配对
                         if (this._isBanned(p1, p2)) {
                             remaining.push(p1, p2);
                             continue;
                         }
                         this._createPair(p1, p2);
+                        pairedIds.add(p1.id);
+                        pairedIds.add(p2.id);
                     } else {
                         remaining.push(p1);
                     }
                 }
 
-                this.pool = remaining;
+                // 只保留未配对的人在 pool 中
+                this.pool = remaining.filter(p => !pairedIds.has(p.id));
             }
 
             /* ----------------------------------------
@@ -1285,6 +1591,8 @@
                     p2.status = Status.QUARREL_WAIT;
                     p1.quarrelWaitRounds = CONSTANTS.QUARREL_WAIT_ROUNDS;
                     p2.quarrelWaitRounds = CONSTANTS.QUARREL_WAIT_ROUNDS;
+                    p1.quarrelStartRound = this.roundNumber;
+                    p2.quarrelStartRound = this.roundNumber;
                     this._addEvent(`争吵：${p1.value} <-> ${p2.value} (等待 ${CONSTANTS.QUARREL_WAIT_ROUNDS} 回合)`);
                     this.quarrelQuota--;
                 }
@@ -1297,6 +1605,9 @@
             _processCheating() {
                 const toRemoveIds = new Set();
                 const newMarriedPairs = [];
+                const usedThirdParties = new Set(); // 记录已被使用的第三者，防止重复
+                const victimsToPool = []; // 需要移到 pool 的受害者
+                const thirdPartyPartnersToPool = []; // 需要移到 pool 的第三者原伴侣
 
                 this.married.forEach((pair, i) => {
                     const [p1, p2] = pair;
@@ -1311,32 +1622,24 @@
                         victim = p1;
                     }
 
+                    // 跳过刚配对的配对（本回合刚组成的家庭不能立即出轨）
+                    if (cheater.justPaired || victim.justPaired) return;
+
                     // 作弊者必须小于受害者
                     if (cheater.value >= victim.value) return;
 
-                    // 寻找第三者
+                    // 寻找第三者（只能从 pool 中选择，避免从 married 中选择造成数据混乱）
                     let thirdParty = null;
                     let maxValue = cheater.value;
 
-                    // 从匹配池中找
+                    // 从匹配池中找（排除刚配对的和已被使用的）
                     this.pool.forEach(person => {
-                        if (person.status === Status.WAIT_TO_MATCH && person.value > maxValue) {
+                        if (person.status === Status.WAIT_TO_MATCH && 
+                            !person.justPaired && 
+                            !usedThirdParties.has(person.id) &&
+                            person.value > maxValue) {
                             maxValue = person.value;
                             thirdParty = person;
-                        }
-                    });
-
-                    // 从其他已婚对中找
-                    this.married.forEach((otherPair, j) => {
-                        if (j === i) return;
-                        const [other1, other2] = otherPair;
-                        if (other1.value > maxValue) {
-                            maxValue = other1.value;
-                            thirdParty = other1;
-                        }
-                        if (other2.value > maxValue) {
-                            maxValue = other2.value;
-                            thirdParty = other2;
                         }
                     });
 
@@ -1348,127 +1651,142 @@
                     // 出轨概率检查
                     if (Math.random() >= CONSTANTS.CHEATING_OUTSIDE_RATE) return;
 
+                    // 立即标记第三者已被使用，不管约会是否成功
+                    usedThirdParties.add(thirdParty.id);
+
                     this._addEvent(`出轨：${cheater.value} (受害者:${victim.value}) 被 ${thirdParty.value} 吸引`);
 
                     // 约会成功率检查
                     if (Math.random() < CONSTANTS.DATING_SUCCESS_RATE) {
                         this._addEvent(`约会成功：${cheater.value} 与 ${thirdParty.value} 在一起`);
 
-                        // 移除第三者从池中
-                        this.pool = this.pool.filter(p => p.id !== thirdParty.id);
-
                         // 标记原配对移除
                         toRemoveIds.add(`${p1.id}-${p2.id}`);
 
-                        // 标记第三者原来的配对移除
-                        this.married.forEach((otherPair, j) => {
-                            if (j === i) return;
-                            if (otherPair[0].id === thirdParty.id || otherPair[1].id === thirdParty.id) {
-                                toRemoveIds.add(`${otherPair[0].id}-${otherPair[1].id}`);
-                            }
-                        });
-
-                        // 处理受害者
-                        victim.status = Status.WAIT_TO_MATCH;
-                        victim.partner = null;
+                        // 记录受害者需要移到 pool
                         victim.divorcedThisRound = true;
+                        victimsToPool.push(victim);
 
-                        // 处理作弊者
-                        cheater.status = Status.MARRIED;
+                        // 从 pool 中移除第三者
+                        this.pool = this.pool.filter(p => p.id !== thirdParty.id);
+
+                        // 设置新配对的状态
+                        cheater.status = Status.CHEATING;
                         cheater.partner = thirdParty;
+                        cheater.cheatingStartRound = this.roundNumber;
+                        cheater.currentRound = this.roundNumber;
+                        cheater.cheatingCount++; // 增加出轨次数
 
-                        // 处理第三者
-                        const thirdPartyPartner = thirdParty.partner;
-                        thirdParty.status = Status.MARRIED;
+                        thirdParty.status = Status.CHEATING;
                         thirdParty.partner = cheater;
-
-                        // 处理第三者原来的伴侣
-                        if (thirdPartyPartner && thirdPartyPartner.id !== cheater.id) {
-                            thirdPartyPartner.status = Status.WAIT_TO_MATCH;
-                            thirdPartyPartner.partner = null;
-                            thirdPartyPartner.divorcedThisRound = true;
-                            this.pool.push(thirdPartyPartner);
-                        }
+                        thirdParty.cheatingStartRound = this.roundNumber;
+                        thirdParty.currentRound = this.roundNumber;
 
                         // 添加新配对
                         newMarriedPairs.push([cheater, thirdParty]);
-
-                        // 添加受害者到池
-                        this.pool.push(victim);
                     }
                 });
 
-                // 移除离婚的配对
+                // 第一步：从 married 中移除需要移除的配对
+                console.log(`[出轨处理] 移除前 married 数量: ${this.married.length}, toRemoveIds: ${Array.from(toRemoveIds).join(', ')}`);
                 this.married = this.married.filter(pair => {
                     const key = `${pair[0].id}-${pair[1].id}`;
                     const reverseKey = `${pair[1].id}-${pair[0].id}`;
                     return !toRemoveIds.has(key) && !toRemoveIds.has(reverseKey);
                 });
+                console.log(`[出轨处理] 移除后 married 数量: ${this.married.length}`);
 
-                // 添加新配对
-                this.married.push(...newMarriedPairs);
+                // 第二步：将受害者移到 pool
+                console.log(`[出轨处理] 受害者数量: ${victimsToPool.length}`);
+                victimsToPool.forEach(p => {
+                    console.log(`[出轨处理] 移动受害者 ${p.value} 到 pool`);
+                    this._moveToPool(p);
+                });
+
+                // 第三步：添加新配对（避免重复的人）
+                const usedIds = new Set();
+                newMarriedPairs.forEach(pair => {
+                    const [p1, p2] = pair;
+                    
+                    // 检查这两个人是否已经在 married 中或已经被使用
+                    const p1InMarried = this.married.some(m => m[0].id === p1.id || m[1].id === p1.id);
+                    const p2InMarried = this.married.some(m => m[0].id === p2.id || m[1].id === p2.id);
+                    
+                    if (!p1InMarried && !p2InMarried && !usedIds.has(p1.id) && !usedIds.has(p2.id)) {
+                        this.married.push(pair);
+                        usedIds.add(p1.id);
+                        usedIds.add(p2.id);
+                    } else {
+                        // 如果无法添加，将人放回 pool
+                        if (!p1InMarried && !usedIds.has(p1.id)) {
+                            this._moveToPool(p1);
+                        }
+                        if (!p2InMarried && !usedIds.has(p2.id)) {
+                            this._moveToPool(p2);
+                        }
+                    }
+                });
             }
 
             /* ----------------------------------------
                处理离婚倾向
                1. 所有已婚对自然增长离婚倾向
                2. 争吵的配对额外增长
-               3. 达到阈值则离婚
+               3. 达到阈值则离婚（所有已婚配对都检查）
                ---------------------------------------- */
             _processDivorceTrend() {
-                // 自然增长
+                const toRemoveIds = new Set();
+
                 this.married.forEach(([p1, p2]) => {
+                    // 基础自然增长
                     p1.divorceTrend += CONSTANTS.DIVORCE_NATURAL_GROWTH;
                     p2.divorceTrend += CONSTANTS.DIVORCE_NATURAL_GROWTH;
-                });
 
-                // 处理争吵中的配对
-                const toRemoveIds = new Set();
-                const poolToAdd = [];
-
-                this.married.forEach(([p1, p2]) => {
+                    // 争吵中的配对额外增长
                     if (p1.status === Status.QUARREL_WAIT || p2.status === Status.QUARREL_WAIT) {
-                        // 额外增长
                         p1.divorceTrend += CONSTANTS.DIVORCE_TREND_INCREMENT;
                         p2.divorceTrend += CONSTANTS.DIVORCE_TREND_INCREMENT;
+                    }
 
-                        // 检查是否达到离婚阈值
-                        if (p1.divorceTrend >= CONSTANTS.DIVORCE_THRESHOLD ||
-                            p2.divorceTrend >= CONSTANTS.DIVORCE_THRESHOLD) {
-                            this._addEvent(`离婚!: ${p1.value} <-> ${p2.value}`);
+                    // 检查是否达到离婚阈值（所有已婚配对都检查）
+                    if (p1.divorceTrend >= CONSTANTS.DIVORCE_THRESHOLD ||
+                        p2.divorceTrend >= CONSTANTS.DIVORCE_THRESHOLD) {
+                        this._addEvent(`离婚!: ${p1.value} <-> ${p2.value} (倾向:${Math.round(p1.divorceTrend)}/${Math.round(p2.divorceTrend)})`);
 
-                            toRemoveIds.add(`${p1.id}-${p2.id}`);
-
-                            // 重置状态
-                            p1.status = Status.WAIT_TO_MATCH;
-                            p2.status = Status.WAIT_TO_MATCH;
-                            p1.partner = null;
-                            p2.partner = null;
-                            p1.divorceTrend = 0;
-                            p2.divorceTrend = 0;
-                            p1.quarrelWaitRounds = 0;
-                            p2.quarrelWaitRounds = 0;
-                            p1.divorcedThisRound = true;
-                            p2.divorcedThisRound = true;
-
-                            // 记录禁止配对
-                            p1.bannedWith[p2.id] = this.roundNumber + CONSTANTS.PAIR_BAN_ROUNDS;
-                            p2.bannedWith[p1.id] = this.roundNumber + CONSTANTS.PAIR_BAN_ROUNDS;
-
-                            poolToAdd.push(p1, p2);
+                        // 统计婚姻维持回合数
+                        if (p1.marriageStartRound > 0) {
+                            p1.totalMarriedRounds += this.roundNumber - p1.marriageStartRound;
                         }
+                        if (p2.marriageStartRound > 0) {
+                            p2.totalMarriedRounds += this.roundNumber - p2.marriageStartRound;
+                        }
+
+                        toRemoveIds.add(`${p1.id}-${p2.id}`);
+
+                        // 记录禁止配对
+                        p1.bannedWith[p2.id] = this.roundNumber + CONSTANTS.PAIR_BAN_ROUNDS;
+                        p2.bannedWith[p1.id] = this.roundNumber + CONSTANTS.PAIR_BAN_ROUNDS;
+
+                        // 重置离婚倾向
+                        p1.divorceTrend = 0;
+                        p2.divorceTrend = 0;
+
+                        // 使用统一方法处理离婚
+                        p1.divorcedThisRound = true;
+                        p2.divorcedThisRound = true;
+                        this._moveToPool(p1);
+                        this._moveToPool(p2);
                     }
                 });
 
                 // 移除离婚的配对
-                this.married = this.married.filter(pair => {
-                    const key = `${pair[0].id}-${pair[1].id}`;
-                    const reverseKey = `${pair[1].id}-${pair[0].id}`;
-                    return !toRemoveIds.has(key) && !toRemoveIds.has(reverseKey);
-                });
-
-                // 添加到池
-                this.pool.push(...poolToAdd);
+                if (toRemoveIds.size > 0) {
+                    this.married = this.married.filter(pair => {
+                        const key = `${pair[0].id}-${pair[1].id}`;
+                        const reverseKey = `${pair[1].id}-${pair[0].id}`;
+                        return !toRemoveIds.has(key) && !toRemoveIds.has(reverseKey);
+                    });
+                }
             }
 
             /* ----------------------------------------
@@ -1477,27 +1795,37 @@
                ---------------------------------------- */
             _processMainTableRepairing() {
                 const toRemove = [];
-                const toAddPool = [];
+                const toMoveToPool = [];
 
                 this.married.forEach((pair, i) => {
                     const [p1, p2] = pair;
 
-                    // 检查两人是否都在有效配对状态
-                    const p1InPair = [Status.MARRIED, Status.QUARREL_WAIT].includes(p1.status);
-                    const p2InPair = [Status.MARRIED, Status.QUARREL_WAIT].includes(p2.status);
+                    // 检查两人是否都在有效配对状态（包括 CHEATING 状态）
+                    const p1InPair = [Status.MARRIED, Status.QUARREL_WAIT, Status.CHEATING].includes(p1.status);
+                    const p2InPair = [Status.MARRIED, Status.QUARREL_WAIT, Status.CHEATING].includes(p2.status);
 
                     if (!p1InPair || !p2InPair) {
                         toRemove.push(i);
-                        if (p1.status === Status.WAIT_TO_MATCH) toAddPool.push(p1);
-                        if (p2.status === Status.WAIT_TO_MATCH) toAddPool.push(p2);
+                        
+                        // 统计婚姻维持回合数
+                        if (p1.marriageStartRound > 0) {
+                            p1.totalMarriedRounds += this.roundNumber - p1.marriageStartRound;
+                        }
+                        if (p2.marriageStartRound > 0) {
+                            p2.totalMarriedRounds += this.roundNumber - p2.marriageStartRound;
+                        }
+                        
+                        // 将不在有效配对状态的人都移到 pool
+                        if (!p1InPair) toMoveToPool.push(p1);
+                        if (!p2InPair) toMoveToPool.push(p2);
                     }
                 });
 
                 // 从后往前移除
                 toRemove.reverse().forEach(i => this.married.splice(i, 1));
 
-                // 添加到池
-                this.pool.push(...toAddPool);
+                // 使用统一方法将人移到 pool
+                toMoveToPool.forEach(p => this._moveToPool(p));
             }
 
             /* ----------------------------------------
@@ -1505,19 +1833,13 @@
                验证所有数据（包括池中和淘汰的）是否有序
                ---------------------------------------- */
             _checkSorting() {
-                // 收集所有数值
+                // 只检查主表格（已婚配对）是否有序
                 const allValues = [];
 
                 // 已婚配对中的数值
                 this.married.forEach(([p1, p2]) => {
                     allValues.push(p1.value, p2.value);
                 });
-
-                // 匹配池中的数值
-                this.pool.forEach(p => allValues.push(p.value));
-
-                // 淘汰的数值
-                this.eliminated.forEach(p => allValues.push(p.value));
 
                 // 检查是否为空
                 if (allValues.length === 0) return;
@@ -1529,7 +1851,8 @@
                 if (ascending || descending) {
                     this.sortSucceeded = true;
                     const order = ascending ? '正序' : '倒序';
-                    this._addEvent(`排序成功! (${order}) 值：${allValues.join(', ')}`);
+                    this._addEvent(`💕 排序成功! (${order}) 值：${allValues.join(', ')}`);
+                    this._addEvent('🎉 有情人终成眷属！祝福每一对新人！');
                 }
             }
 
@@ -1540,7 +1863,10 @@
             _addEvent(message) {
                 const now = new Date();
                 const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-                this.events.push(`[${timeStr}] ${message}`);
+                const eventStr = `[${timeStr}] ${message}`;
+                this.events.push(eventStr);
+                // 同时输出到控制台
+                console.log(eventStr);
             }
         }
 
@@ -1574,9 +1900,98 @@
                     modalClose: document.getElementById('modalClose')
                 };
 
+                // 创建悬浮提示框
+                this._createTooltip();
+
                 this._initEventListeners();
                 this._initFlowchart();
                 this.reset();
+            }
+
+            /* ----------------------------------------
+               创建悬浮提示框
+               ---------------------------------------- */
+            _createTooltip() {
+                this.tooltip = document.createElement('div');
+                this.tooltip.className = 'data-tooltip';
+                this.tooltip.style.cssText = 'position:fixed;background:#fff;color:#000;padding:10px;border-radius:8px;z-index:9999;display:none;';
+                document.body.appendChild(this.tooltip);
+                console.log('Tooltip created:', this.tooltip);
+            }
+
+            /* ----------------------------------------
+               显示悬浮提示框
+               ---------------------------------------- */
+            _showTooltip(person, x, y) {
+                console.log('_showTooltip called', person, x, y);
+                const divorceRate = (person.divorceTrend / CONSTANTS.DIVORCE_THRESHOLD * 100).toFixed(1);
+                const stabilityScore = person.calculateStabilityScore(person.divorceTrend / CONSTANTS.DIVORCE_THRESHOLD);
+                
+                const statusText = {
+                    'single': '单身',
+                    'married': '已婚',
+                    'wait-to-match': '等待配对',
+                    'quarrel-wait': '争吵中',
+                    'cheating': '出轨中'
+                }[person.status] || person.status;
+
+                this.tooltip.innerHTML = `
+                    <div class="tooltip-header">数值: ${person.value}</div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">状态:</span>
+                        <span class="tooltip-value">${statusText}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">离婚倾向:</span>
+                        <span class="tooltip-value ${person.divorceTrend > 50 ? 'negative' : 'positive'}">${person.divorceTrend.toFixed(1)}/100</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">离婚率:</span>
+                        <span class="tooltip-value ${divorceRate > 50 ? 'negative' : 'positive'}">${divorceRate}%</span>
+                    </div>
+                    <div class="tooltip-divider"></div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">婚姻维持回合:</span>
+                        <span class="tooltip-value positive">${person.totalMarriedRounds}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">争吵回合:</span>
+                        <span class="tooltip-value negative">${person.totalQuarrelRounds}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">出轨次数:</span>
+                        <span class="tooltip-value negative">${person.cheatingCount}</span>
+                    </div>
+                    <div class="tooltip-score">
+                        婚姻稳定指数: ${stabilityScore}
+                    </div>
+                `;
+
+                // 计算位置，确保不超出屏幕
+                const rect = this.tooltip.getBoundingClientRect();
+                let left = x + 15;
+                let top = y - 15;
+                
+                if (left + 220 > window.innerWidth) {
+                    left = x - 235;
+                }
+                if (top + rect.height > window.innerHeight) {
+                    top = y - rect.height;
+                }
+
+                this.tooltip.style.left = `${left}px`;
+                this.tooltip.style.top = `${top}px`;
+                this.tooltip.style.display = 'block';
+                this.tooltip.classList.add('visible');
+                console.log('Tooltip shown at', left, top);
+            }
+
+            /* ----------------------------------------
+               隐藏悬浮提示框
+               ---------------------------------------- */
+            _hideTooltip() {
+                this.tooltip.style.display = 'none';
+                this.tooltip.classList.remove('visible');
             }
 
             /* ----------------------------------------
@@ -1694,7 +2109,16 @@
 
                 // 添加强力成功事件
                 this.sorter._addEvent('🎉 排序完成！恭喜！');
-                this._render({ allEvents: this.sorter.events });
+                this._render({
+                    round: this.sorter.roundNumber,
+                    married: this.sorter.married.map(pair => [
+                        { id: pair[0].id, value: pair[0].value, status: pair[0].status, divorceTrend: pair[0].divorceTrend, cheatingStartRound: pair[0].cheatingStartRound, currentRound: this.sorter.roundNumber },
+                        { id: pair[1].id, value: pair[1].value, status: pair[1].status, divorceTrend: pair[1].divorceTrend, cheatingStartRound: pair[1].cheatingStartRound, currentRound: this.sorter.roundNumber }
+                    ]),
+                    pool: this.sorter.pool.map(p => ({ id: p.id, value: p.value, status: p.status, divorceTrend: p.divorceTrend })),
+                    eliminated: this.sorter.eliminated.map(p => ({ id: p.id, value: p.value })),
+                    allEvents: this.sorter.events
+                });
             }
 
             /* ----------------------------------------
@@ -1789,12 +2213,10 @@
                更新统计信息
                ---------------------------------------- */
             _updateStatistics(result) {
-                const { roundNumber, marriedCount, poolCount, eliminatedCount } = this.elements;
-
-                roundNumber.textContent = result.round;
-                marriedCount.textContent = result.married.length;
-                poolCount.textContent = result.pool.length;
-                eliminatedCount.textContent = result.eliminated.length;
+                this.elements.roundNumber.textContent = result.round;
+                this.elements.marriedCount.textContent = result.married.length;
+                this.elements.poolCount.textContent = result.pool.length;
+                this.elements.eliminatedCount.textContent = result.eliminated.length;
             }
 
             /* ----------------------------------------
@@ -1810,6 +2232,12 @@
 
             /* ----------------------------------------
                渲染图表 - 使用 DocumentFragment 优化
+               配对改为并排显示，不是上下叠放
+               支持动态颜色变化：
+               - 单身/等待：固定灰色
+               - 已婚：红色
+               - 争吵累积：红色逐渐加深（根据 divorceTrend）
+               - 出轨：紫色逐渐褪色到红色（根据出轨回合数）
                ---------------------------------------- */
             _renderChart(marriedData) {
                 const { chart } = this.elements;
@@ -1821,34 +2249,110 @@
                     if (pair[1].value > maxValue) maxValue = pair[1].value;
                 });
 
+                // 保存 this 引用用于事件处理
+                const self = this;
+
                 // 使用 DocumentFragment 减少 DOM 操作
                 const fragment = document.createDocumentFragment();
 
                 marriedData.forEach(pair => {
                     const [p1, p2] = pair;
 
-                    // 创建配对容器
-                    const pairContainer = document.createElement('div');
-                    pairContainer.className = 'bar-slot';
+                    // 创建配对容器（用于虚线框）
+                    const pairWrapper = document.createElement('div');
+                    pairWrapper.className = 'pair-wrapper paired';
 
-                    // 创建两个 bar
-                    [p1, p2].forEach(p => {
-                        const bar = document.createElement('div');
-                        bar.className = `bar ${p.status}`;
-                        bar.style.height = `${((p.value / maxValue) * 180 + 30)}px`;
+                    // 创建第一个 bar
+                    const slot1 = document.createElement('div');
+                    slot1.className = 'bar-slot';
 
-                        // 数值标签
-                        const valueLabel = document.createElement('div');
-                        valueLabel.className = 'bar-value';
-                        valueLabel.textContent = p.value;
-                        bar.appendChild(valueLabel);
+                    const bar1 = document.createElement('div');
+                    bar1.className = 'bar ' + p1.status;
+                    bar1.style.height = `${((p1.value / maxValue) * 180 + 30)}px`;
+                    // 应用动态颜色
+                    bar1.style.background = this._calculateColor(
+                        p1.status,
+                        p1.divorceTrend || 0,
+                        p1.cheatingStartRound || 0,
+                        p1.currentRound || this.sorter?.roundNumber || 0
+                    );
 
-                        pairContainer.appendChild(bar);
+                    // 保存人物数据引用
+                    bar1.dataset.personId = p1.id;
+                    bar1.dataset.personValue = p1.value;
+
+                    // 添加鼠标事件
+                    bar1.addEventListener('mouseenter', function(e) {
+                        console.log('bar1 mouseenter', this.dataset.personId);
+                        const person = self.sorter.people.find(p => p.id === parseInt(this.dataset.personId));
+                        console.log('person found:', person);
+                        if (person) {
+                            self._showTooltip(person, e.clientX, e.clientY);
+                        }
+                    });
+                    bar1.addEventListener('mousemove', function(e) {
+                        const person = self.sorter.people.find(p => p.id === parseInt(this.dataset.personId));
+                        if (person) {
+                            self._showTooltip(person, e.clientX, e.clientY);
+                        }
+                    });
+                    bar1.addEventListener('mouseleave', function() {
+                        self._hideTooltip();
                     });
 
-                    // 配对虚线框
-                    pairContainer.classList.add('paired');
-                    fragment.appendChild(pairContainer);
+                    const valueLabel1 = document.createElement('div');
+                    valueLabel1.className = 'bar-value';
+                    valueLabel1.textContent = p1.value;
+                    bar1.appendChild(valueLabel1);
+
+                    slot1.appendChild(bar1);
+                    pairWrapper.appendChild(slot1);
+
+                    // 创建第二个 bar
+                    const slot2 = document.createElement('div');
+                    slot2.className = 'bar-slot';
+
+                    const bar2 = document.createElement('div');
+                    bar2.className = 'bar ' + p2.status;
+                    bar2.style.height = `${((p2.value / maxValue) * 180 + 30)}px`;
+                    // 应用动态颜色
+                    bar2.style.background = this._calculateColor(
+                        p2.status,
+                        p2.divorceTrend || 0,
+                        p2.cheatingStartRound || 0,
+                        p2.currentRound || this.sorter?.roundNumber || 0
+                    );
+
+                    // 保存人物数据引用
+                    bar2.dataset.personId = p2.id;
+                    bar2.dataset.personValue = p2.value;
+
+                    // 添加鼠标事件
+                    bar2.addEventListener('mouseenter', function(e) {
+                        const person = self.sorter.people.find(p => p.id === parseInt(this.dataset.personId));
+                        if (person) {
+                            self._showTooltip(person, e.clientX, e.clientY);
+                        }
+                    });
+                    bar2.addEventListener('mousemove', function(e) {
+                        const person = self.sorter.people.find(p => p.id === parseInt(this.dataset.personId));
+                        if (person) {
+                            self._showTooltip(person, e.clientX, e.clientY);
+                        }
+                    });
+                    bar2.addEventListener('mouseleave', function() {
+                        self._hideTooltip();
+                    });
+
+                    const valueLabel2 = document.createElement('div');
+                    valueLabel2.className = 'bar-value';
+                    valueLabel2.textContent = p2.value;
+                    bar2.appendChild(valueLabel2);
+
+                    slot2.appendChild(bar2);
+                    pairWrapper.appendChild(slot2);
+
+                    fragment.appendChild(pairWrapper);
                 });
 
                 // 一次性更新 DOM
@@ -1857,14 +2361,73 @@
             }
 
             /* ----------------------------------------
+               计算动态颜色方法
+               根据状态、离婚倾向、出轨时间来计算颜色
+               ---------------------------------------- */
+            _calculateColor(status, divorceTrend, cheatingStartRound, currentRound) {
+                // 出轨褪色计算：从紫色逐渐褪色到红色
+                // 假设 10 回合内完全褪色
+                const CHEATING_FADE_ROUNDS = 10;
+                const cheatingRounds = currentRound - cheatingStartRound;
+                const cheatingFade = Math.min(1, cheatingRounds / CHEATING_FADE_ROUNDS);
+
+                // 争吵加深计算：从红色逐渐加深
+                // 离婚倾向 0-100，对应颜色深度 0-1
+                const quarrelIntensity = divorceTrend / 100;
+
+                if (status === 'wait-to-match' || status === 'single') {
+                    // 等待配对/单身：固定灰色
+                    return 'linear-gradient(180deg, #868e96, #495057)';
+                } else if (status === 'married') {
+                    // 已婚：根据离婚倾向加深颜色
+                    const r1 = 255, g1 = 107, b1 = 107;
+                    const r2 = 139, g2 = 0, b2 = 0;
+                    const r = Math.round(r1 + (r2 - r1) * quarrelIntensity);
+                    const g = Math.round(g1 + (g2 - g1) * quarrelIntensity);
+                    const b = Math.round(b1 + (b2 - b1) * quarrelIntensity);
+                    return `linear-gradient(180deg, rgb(${r},${g},${b}), rgb(${Math.round(r*0.7)},${Math.round(g*0.3)},${Math.round(b*0.3)}))`;
+                } else if (status === 'quarrel-wait') {
+                    // 争吵中：根据离婚倾向进一步加深
+                    const baseR = 255, baseG = 135, baseB = 135;
+                    const deepR = 180, deepG = 30, deepB = 30;
+                    const r = Math.round(baseR + (deepR - baseR) * quarrelIntensity);
+                    const g = Math.round(baseG + (deepG - baseG) * quarrelIntensity);
+                    const b = Math.round(baseB + (deepB - baseB) * quarrelIntensity);
+                    return `linear-gradient(180deg, rgb(${r},${g},${b}), rgb(${Math.round(r*0.6)},${Math.round(g*0.2)},${Math.round(b*0.2)}))`;
+                } else if (status === 'cheating') {
+                    // 出轨：紫色褪色到红色
+                    const pr = 218, pg = 119, pb = 242;
+                    const rr = 255, rg = 107, rb = 107;
+                    const r = Math.round(pr + (rr - pr) * cheatingFade);
+                    const g = Math.round(pg + (rg - pg) * cheatingFade);
+                    const b = Math.round(pb + (rb - pb) * cheatingFade);
+                    return `linear-gradient(180deg, rgb(${r},${g},${b}), rgb(${Math.round(r*0.7)},${Math.round(g*0.5)},${Math.round(b*0.5)}))`;
+                } else {
+                    // 默认红色
+                    return 'linear-gradient(180deg, #ff6b6b, #c92a2a)';
+                }
+            }
+
+            /* ----------------------------------------
                渲染匹配池
                ---------------------------------------- */
             _renderPool(poolData) {
                 const { poolArea } = this.elements;
 
-                poolArea.innerHTML = poolData.map(p =>
+                console.log('_renderPool called with:', poolData.length, 'items');
+                console.log('poolArea element:', poolArea);
+
+                if (!poolArea) {
+                    console.error('poolArea is null!');
+                    return;
+                }
+
+                const html = poolData.map(p =>
                     `<div class="pool-item wait">${p.value}</div>`
                 ).join('');
+
+                console.log('Generated HTML:', html.substring(0, 200));
+                poolArea.innerHTML = html;
             }
 
             /* ----------------------------------------
