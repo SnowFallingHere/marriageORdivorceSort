@@ -1,0 +1,33 @@
+const CONSTANTS = {
+    PAIR_SUCCESS_RATE: 0.8,
+    CHEATING_OUTSIDE_RATE: 0.6,
+    DATING_SUCCESS_RATE: 0.5,
+    QUARREL_RATE: 0.6,
+
+    DIVORCE_TREND_INCREMENT: 35,
+    DIVORCE_NATURAL_GROWTH: 8,
+    DIVORCE_THRESHOLD: 70,
+
+    PAIR_BAN_ROUNDS: 12,
+    QUARREL_WAIT_ROUNDS: 2,
+    PAIR_CHECK_ROUNDS: 4,
+    PAIR_LIMIT: 2,
+
+    MIN_VALUE: 1,
+    MAX_VALUE: 100,
+    MIN_DATA_COUNT: 2,
+    MAX_DATA_COUNT: 20,
+
+    DEFAULT_DATA_COUNT: 12,
+    DEFAULT_SPEED: 1000,
+    MIN_SPEED: 100,
+    MAX_SPEED: 5000,
+};
+
+const Status = {
+    SINGLE: 'single',
+    MARRIED: 'married',
+    WAIT_TO_MATCH: 'wait-to-match',
+    QUARREL_WAIT: 'quarrel-wait',
+    CHEATING: 'cheating'
+};
