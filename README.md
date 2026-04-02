@@ -1,7 +1,8 @@
 # Marriage-Or-Divorce Sort
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-2.0.0-green.svg)
+![Version](https://img.shields.io/badge/version-2.1.0-green.svg)
+[![Deploy](https://img.shields.io/badge/deploy-GitHub%20Pages-yellow.svg)](https://snowfallinghere.github.io/marriageORdivorceSort/)
 
 > 一个基于"婚姻配对"概念的可视化排序算法，通过模拟配对、争吵、出轨、离婚等过程实现数据排序。
 
