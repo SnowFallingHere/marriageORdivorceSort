@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marriage-Or-Divorce Sort Visualization</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #f093fb, #f5576c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .control-group { display: flex; align-items: center; gap: 8px; }
+        label { font-size: 0.9rem; color: #aaa; }
+        input[type="number"] {
+            width: 80px;
+            padding: 8px 12px;
+            border: 2px solid #333;
+            border-radius: 8px;
+            background: #2a2a4a;
+            color: #fff;
+            font-size: 1rem;
+        }
+        input[type="number"]:focus { outline: none; border-color: #f5576c; }
+        button {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        .btn-primary { background: linear-gradient(135deg, #f5576c, #f093fb); color: #fff; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(245, 87, 108, 0.4); }
+        .btn-secondary { background: #333; color: #fff; }
+        .btn-secondary:hover { background: #444; }
+        .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .main-display { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
+        .left-panel { display: flex; flex-direction: column; gap: 20px; }
+
+        .chart-container, .pool-container, .status-panel, .flowchart, .event-log {
+            background: #1e1e3f;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        .chart-title, .pool-title, .flowchart-title, .event-log-title {
+            font-size: 1rem;
+            color: #888;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            height: 250px;
+            gap: 8px;
+            padding: 20px 10px;
+            background: #151530;
+            border-radius: 12px;
+            position: relative;
+        }
+        .bar-slot {
+            flex: 1;
+            max-width: 80px;
+            height: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .bar {
+            width: 80%;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            min-height: 20px;
+            position: relative;
+        }
+        .pair-container.paired {
+            position: relative;
+        }
+        .pair-container.paired::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -10px;
+            right: -10px;
+            bottom: 0;
+            border: 2px dashed #4ade80;
+            border-radius: 12px;
+            z-index: 1;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0.5; transform: scale(1); }
+        }
+        .bar-value {
+            position: absolute;
+            top: -25px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .bar.married { background: linear-gradient(180deg, #ff6b6b, #c92a2a); }
+        .bar.quarrel { background: linear-gradient(180deg, #ff8787, #e03131); }
+        .bar.quarrel-wait { background: linear-gradient(180deg, #ff8787, #e03131); }
+        .bar.cheating { background: linear-gradient(180deg, #da77f2, #9c36b5); }
+        .bar.success {
+            box-shadow: 0 0 20px #4ade80;
+        }
+        .bar.glowing {
+            animation: bar-glow 0.8s ease-in-out forwards;
+        }
+        @keyframes bar-glow {
+            0% { 
+                box-shadow: 0 0 5px #4ade80, inset 0 0 5px rgba(255,255,255,0.3);
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 40px #4ade80, 0 0 70px #22c55e, inset 0 0 30px rgba(255,255,255,0.8);
+                transform: scale(1.1);
+            }
+            100% { 
+                box-shadow: 0 0 25px #4ade80, inset 0 0 10px rgba(255,255,255,0.4);
+                transform: scale(1);
+            }
+        }
+
+        .pool-container {
+            background: #1e1e3f;
+            border-radius: 16px;
+            padding: 15px;
+        }
+        .pool-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 60px;
+            padding: 15px;
+            background: #151530;
+            border-radius: 12px;
+            align-items: center;
+            justify-content: center;
+        }
+        .pool-item {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .pool-item.wait { background: linear-gradient(135deg, #ffd43b, #fab005); color: #333; }
+        .pool-item.eliminated { background: linear-gradient(135deg, #868e96, #495057); opacity: 0.5; }
+
+        .status-section { margin-bottom: 20px; }
+        .status-title {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #2a2a4a;
+        }
+        .stat-label { color: #888; }
+        .stat-value { font-weight: bold; color: #f5576c; }
+        .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; }
+        .legend-color { width: 16px; height: 16px; border-radius: 4px; }
+        .married-pairs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; max-height: 80px; overflow-y: auto; }
+        .pair {
+            padding: 4px 10px;
+            background: #ff6b6b;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        .pair-value {
+            display: inline-block;
+            padding: 2px 6px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            margin: 0 2px;
+        }
+        .flowchart-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            flex-wrap: wrap;
+            padding: 15px;
+            background: #151530;
+            border-radius: 12px;
+            min-height: 60px;
+        }
+        .flow-step {
+            padding: 8px 14px;
+            background: #2a2a4a;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: #888;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .flow-step.active {
+            background: linear-gradient(135deg, #f5576c, #f093fb);
+            color: #fff;
+            transform: scale(1.1);
+            box-shadow: 0 5px 20px rgba(245, 87, 108, 0.4);
+            border-color: #fff;
+        }
+        .flow-arrow { color: #444; font-size: 1rem; }
+        .event-log { margin-top: 20px; max-height: 150px; overflow-y: auto; }
+        .event-list { display: flex; flex-direction: column; gap: 6px; }
+        .event-item {
+            padding: 6px 10px;
+            background: #151530;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: #aaa;
+            border-left: 3px solid #444;
+            transition: all 0.3s ease;
+        }
+        .event-item.new { border-left-color: #51cf66; color: #8ce99a; }
+        .event-item.error { border-left-color: #ff6b6b; color: #ffa8a8; }
+        .event-item.warning { border-left-color: #ffd43b; color: #ffe066; }
+        
+        /* Header with help icon */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0;
+        }
+        .help-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        .help-icon:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a3e, #2d2d5a);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.3s ease;
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        .modal-close:hover {
+            transform: scale(1.1);
+            background: #fa5252;
+        }
+        .modal-title {
+            font-size: 1.8rem;
+            color: #f5576c;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .modal-section {
+            margin-bottom: 25px;
+        }
+        .modal-section-title {
+            font-size: 1.3rem;
+            color: #f093fb;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .modal-section-title .emoji {
+            font-size: 1.5rem;
+        }
+        .modal-text {
+            color: #ccc;
+            line-height: 1.8;
+            margin-bottom: 10px;
+        }
+        .modal-highlight {
+            background: rgba(245, 87, 108, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #f5576c;
+            margin: 15px 0;
+        }
+        .modal-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        .modal-step-number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f5576c, #f093fb);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .modal-step-content {
+            color: #ccc;
+            line-height: 1.6;
+        }
+        .modal-legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .modal-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ccc;
+        }
+        .modal-legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @media (max-width: 800px) { .main-display { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Marriage-Or-Divorce Sort</h1>
+            <div class="help-icon" id="helpIcon" title="Help">?</div>
+        </div>
+        <div class="controls">
+            <div class="control-group">
+                <label>Data Count:</label>
+                <input type="number" id="dataCount" value="12" min="2" max="20">
+            </div>
+            <div class="control-group">
+                <label>Speed(ms):</label>
+                <input type="number" id="speed" value="1000" min="300" max="3000" step="100">
+            </div>
+            <button class="btn-primary" id="startBtn">Start</button>
+            <button class="btn-secondary" id="pauseBtn" disabled>Pause</button>
+            <button class="btn-secondary" id="resetBtn">Reset</button>
+        </div>
+        <div class="main-display">
+            <div class="left-panel">
+                <div class="chart-container">
+                    <div class="chart-title">Married Pairs (Sorted)</div>
+                    <div class="chart" id="chart"></div>
+                </div>
+                <div class="pool-container">
+                    <div class="pool-title">Matching Pool</div>
+                    <div class="pool-area" id="poolArea"></div>
+                </div>
+            </div>
+            <div class="status-panel">
+                <div class="status-section">
+                    <div class="status-title">Statistics</div>
+                    <div class="stat-row"><span class="stat-label">Round</span><span class="stat-value" id="roundNum">0</span></div>
+                    <div class="stat-row"><span class="stat-label">Married</span><span class="stat-value" id="marriedCount">0</span></div>
+                    <div class="stat-row"><span class="stat-label">Pool</span><span class="stat-value" id="poolCount">0</span></div>
+                    <div class="stat-row"><span class="stat-label">Eliminated</span><span class="stat-value" id="eliminatedCount">0</span></div>
+                </div>
+                <div class="status-section">
+                    <div class="status-title">Legend</div>
+                    <div class="legend">
+                        <div class="legend-item"><div class="legend-color" style="background: linear-gradient(135deg, #ffd43b, #fab005);"></div><span>Wait Pool</span></div>
+                        <div class="legend-item"><div class="legend-color" style="background: linear-gradient(180deg, #ff6b6b, #c92a2a);"></div><span>Married</span></div>
+                        <div class="legend-item"><div class="legend-color" style="background: linear-gradient(180deg, #ff8787, #e03131);"></div><span>Quarrel</span></div>
+                        <div class="legend-item"><div class="legend-color" style="background: linear-gradient(180deg, #da77f2, #9c36b5);"></div><span>Cheating</span></div>
+                        <div class="legend-item"><div class="legend-color" style="background: linear-gradient(135deg, #868e96, #495057);"></div><span>Eliminated</span></div>
+                    </div>
+                </div>
+                <div class="status-section">
+                    <div class="status-title">Married Pairs</div>
+                    <div class="married-pairs" id="marriedPairs"><span style="color: #666; font-size: 0.85rem;">No pairs yet</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="flowchart">
+            <div class="flowchart-title">Process Flow</div>
+            <div class="flowchart-container" id="flowchart">
+                <div class="flow-step" data-step="0">Generate</div>
+                <span class="flow-arrow">-></span>
+                <div class="flow-step" data-step="1">Kick Min</div>
+                <span class="flow-arrow">-></span>
+                <div class="flow-step" data-step="2">Pair Up</div>
+                <span class="flow-arrow">-></span>
+                <div class="flow-step" data-step="3">Cheating</div>
+                <span class="flow-arrow">-></span>
+                <div class="flow-step" data-step="4">Quarrel</div>
+                <span class="flow-arrow">-></span>
+                <div class="flow-step" data-step="5">Sort Check</div>
+                <span class="flow-arrow">-></span>
+                <div class="flow-step" data-step="6">Pool</div>
+            </div>
+        </div>
+        <div class="event-log">
+            <div class="event-log-title">Event Log</div>
+            <div class="event-list" id="eventList"></div>
+        </div>
+    </div>
+    
+    <!-- Help Modal -->
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal-content">
+            <button class="modal-close" id="modalClose">&times;</button>
+            <h2 class="modal-title">💑 婚姻或离婚排序算法</h2>
+            
+            <div class="modal-section">
+                <h3 class="modal-section-title">
+                    <span class="emoji">📖</span>
+                    算法简介
+                </h3>
+                <p class="modal-text">
+                    这是一个基于"婚姻配对"概念的排序算法。每个人（数值）都在寻找合适的伴侣，通过配对、争吵、出轨、离婚等过程，
+                    最终实现有序排列。就像现实生活一样，这个过程充满了戏剧性！
+                </p>
+            </div>
+            
+            <div class="modal-section">
+                <h3 class="modal-section-title">
+                    <span class="emoji">🎯</span>
+                    核心规则
+                </h3>
+                <div class="modal-highlight">
+                    <p class="modal-text" style="margin: 0;">
+                        <strong>目标：</strong> 所有配对的数值按大小有序排列（小→大 或 大→小）
+                    </p>
+                </div>
+                <div class="modal-legend">
+                    <div class="modal-legend-item">
+                        <div class="modal-legend-color" style="background: linear-gradient(180deg, #ff6b6b, #c92a2a);"></div>
+                        <span>已婚（Married）</span>
+                    </div>
+                    <div class="modal-legend-item">
+                        <div class="modal-legend-color" style="background: linear-gradient(180deg, #ff8787, #e03131);"></div>
+                        <span>争吵中（Quarrel）</span>
+                    </div>
+                    <div class="modal-legend-item">
+                        <div class="modal-legend-color" style="background: linear-gradient(135deg, #ffd43b, #fab005);"></div>
+                        <span>等待配对（Wait Pool）</span>
+                    </div>
+                    <div class="modal-legend-item">
+                        <div class="modal-legend-color" style="background: linear-gradient(180deg, #da77f2, #9c36b5);"></div>
+                        <span>出轨（Cheating）</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-section">
+                <h3 class="modal-section-title">
+                    <span class="emoji">🎬</span>
+                    算法流程
+                </h3>
+                
+                <div class="modal-step">
+                    <div class="modal-step-number">1</div>
+                    <div class="modal-step-content">
+                        <strong>第一回合：初次配对</strong><br>
+                        所有人直接两两配对。如果是奇数，最小的那个人会被"踢"到匹配池等待下一轮。
+                        配对成功后，有些情侣可能会因为性格不合而争吵。
+                    </div>
+                </div>
+                
+                <div class="modal-step">
+                    <div class="modal-step-number">2</div>
+                    <div class="modal-step-content">
+                        <strong>争吵机制</strong><br>
+                        每回合约有 1/3 的配对会发生争吵。争吵后，双方会进入"冷静期"（2 回合），
+                        这期间他们仍然是夫妻，但关系紧张。如果连续争吵 4 次，离婚倾向会达到 100%，导致离婚。
+                    </div>
+                </div>
+                
+                <div class="modal-step">
+                    <div class="modal-step-number">3</div>
+                    <div class="modal-step-content">
+                        <strong>出轨与重新配对</strong><br>
+                        较小的一方可能会"出轨"，寻找更大的数值。如果出轨成功，原配会被抛弃，
+                        出轨者和新欢组成新的家庭。被抛弃的人会进入匹配池等待新的机会。
+                    </div>
+                </div>
+                
+                <div class="modal-step">
+                    <div class="modal-step-number">4</div>
+                    <div class="modal-step-content">
+                        <strong>离婚机制</strong><br>
+                        当离婚倾向达到 100% 时，配对会离婚。离婚后的 12 回合内，双方不能再配对
+                        （避免"藕断丝连"）。之后他们会进入匹配池寻找新的伴侣。
+                    </div>
+                </div>
+                
+                <div class="modal-step">
+                    <div class="modal-step-number">5</div>
+                    <div class="modal-step-content">
+                        <strong>匹配池配对</strong><br>
+                        匹配池中的人会尝试两两配对。但刚离婚的人需要等待一回合才能配对。
+                        如果池中有奇数个人，剩下的那个人只能继续等待。
+                    </div>
+                </div>
+                
+                <div class="modal-step">
+                    <div class="modal-step-number">6</div>
+                    <div class="modal-step-content">
+                        <strong>排序检查</strong><br>
+                        每回合结束后，系统会检查所有配对是否已经有序排列。如果所有数值
+                        都按从小到大或从大到小排列，算法成功完成，并播放庆祝动画！
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-section">
+                <h3 class="modal-section-title">
+                    <span class="emoji">💡</span>
+                    关键概念
+                </h3>
+                <div class="modal-highlight">
+                    <p class="modal-text">
+                        <strong>📊 离婚倾向：</strong> 每回合自然增长 5%，争吵时额外增长 20%。
+                        达到 100% 就会离婚。
+                    </p>
+                    <p class="modal-text" style="margin: 10px 0 0 0;">
+                        <strong>🚫 禁止配对：</strong> 离婚后 12 回合内不能再配对，避免"死灰复燃"。
+                    </p>
+                    <p class="modal-text" style="margin: 10px 0 0 0;">
+                        <strong>⏰ 冷静期：</strong> 争吵后 2 回合内不参与任何活动，让双方冷静思考。
+                    </p>
+                </div>
+            </div>
+            
+            <div class="modal-section">
+                <h3 class="modal-section-title">
+                    <span class="emoji">🎮</span>
+                    操作说明
+                </h3>
+                <p class="modal-text">
+                    <strong>Start：</strong> 开始算法<br>
+                    <strong>Pause/Resume：</strong> 暂停/继续<br>
+                    <strong>Reset：</strong> 重新开始<br>
+                    <strong>Data Count：</strong> 设置数据个数（2-20）<br>
+                    <strong>Speed：</strong> 设置每回合速度（毫秒）
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const Status = { 
+            SINGLE: 'single', 
+            MARRIED: 'married', 
+            WAIT_TO_MATCH: 'wait-to-match', 
+            QUARREL_WAIT: 'quarrel-wait' // 争吵后等待（当前回合和下一回合不参与）
+        };
+        const PAIR_SUCCESS_RATE = 0.8;
+        const CHEATING_OUTSIDE_RATE = 0.6;
+        const DATING_SUCCESS_RATE = 0.5;
+        const QUARREL_RATE = 0.6;
+        const DIVORCE_TREND_INCREMENT = 20; // 每次争吵增加20%离婚倾向
+        const DIVORCE_NATURAL_GROWTH = 5; // 每回合自然增长5%
+        const PAIR_BAN_ROUNDS = 12; // 禁止12回合
+        const PAIR_CHECK_ROUNDS = 4; // 连续4回合
+        const PAIR_LIMIT = 2; // 匹配超过2次
+
+        class Person {
+            constructor(value) {
+                this.value = value;
+                this.id = Date.now() + Math.floor(Math.random() * 10000);
+                this.status = Status.SINGLE;
+                this.partner = null;
+                this.divorce_trend = 0; // 离婚倾向 0-100
+                this.pair_history = []; // 配对历史记录
+                this.banned_with = {}; // 禁止配对的对象 { personId: roundNumber }
+                this.quarrel_wait_rounds = 0; // 争吵后等待回合数
+                this.divorced_this_round = false; // 本回合是否刚离婚
+            }
+        }
+
+        class MarriageOrDivorceSort {
+            constructor() {
+                this.round_number = 0;
+                this.eliminated = [];
+                this.married = [];
+                this.pool = [];
+                this.events = [];
+                this._sort_succeeded = false;
+                this.people = [];
+                this.quarrel_quota = 0; // 本回合允许的争吵对数上限
+            }
+
+            generate_data(n, minVal = 1, maxVal = 100) {
+                this.people = [];
+                // 生成不重复的随机数
+                var usedValues = {};
+                for (let i = 0; i < n; i++) {
+                    var value;
+                    do {
+                        value = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
+                    } while (usedValues[value]);
+                    usedValues[value] = true;
+                    this.people.push(new Person(value));
+                }
+                return this.people;
+            }
+
+            step() {
+                if (this._sort_succeeded) return { sortSucceeded: true };
+                this.round_number++;
+                this._process_round();
+                this._check_sorting();
+                return {
+                    round: this.round_number,
+                    eliminated: this.eliminated.map(function(p) { return { id: p.id, value: p.value }; }),
+                    married: this.married.map(function(pair) { return [{ id: pair[0].id, value: pair[0].value, status: pair[0].status }, { id: pair[1].id, value: pair[1].value, status: pair[1].status }]; }),
+                    pool: this.pool.map(function(p) { return { id: p.id, value: p.value }; }),
+                    sortSucceeded: this._sort_succeeded,
+                    newEvents: this.events.slice(-5),
+                    allEvents: [...this.events]
+                };
+            }
+
+            _process_round() {
+                // 计算本回合允许的争吵对数上限：向上取整 (已婚对数/3)，最低为 1
+                var marriedPairs = this.married.length;
+                this.quarrel_quota = Math.max(1, Math.ceil(marriedPairs / 3));
+                
+                // 重置所有人的 divorced_this_round 标志
+                for (var i = 0; i < this.people.length; i++) {
+                    this.people[i].divorced_this_round = false;
+                }
+                
+                // 减少争吵等待回合数，恢复 MARRIED 状态
+                for (var i = 0; i < this.people.length; i++) {
+                    var p = this.people[i];
+                    if (p.quarrel_wait_rounds > 0) {
+                        p.quarrel_wait_rounds--;
+                        if (p.quarrel_wait_rounds === 0 && p.status === Status.QUARREL_WAIT) {
+                            // 等待结束，恢复为 MARRIED 状态
+                            p.status = Status.MARRIED;
+                        }
+                    }
+                }
+                
+                // 也检查匹配池中的人
+                for (var i = 0; i < this.pool.length; i++) {
+                    var p = this.pool[i];
+                    if (p.quarrel_wait_rounds > 0) {
+                        p.quarrel_wait_rounds--;
+                        if (p.quarrel_wait_rounds === 0 && p.status === Status.QUARREL_WAIT) {
+                            p.status = Status.MARRIED;
+                        }
+                    }
+                }
+                
+                if (this.round_number === 1) {
+                    this._first_round_pairing();
+                } else {
+                    this._process_later_rounds();
+                }
+            }
+
+            _first_round_pairing() {
+                var singles = [];
+                for (var i = 0; i < this.people.length; i++) {
+                    var p = this.people[i];
+                    if (p.status === Status.SINGLE) {
+                        singles.push(p);
+                    }
+                }
+                
+                // 如果有奇数，先踢最小的出去
+                if (singles.length % 2 !== 0) {
+                    var minIndex = 0;
+                    for (var i = 1; i < singles.length; i++) {
+                        if (singles[i].value < singles[minIndex].value) {
+                            minIndex = i;
+                        }
+                    }
+                    var eliminated = singles.splice(minIndex, 1)[0];
+                    eliminated.status = Status.WAIT_TO_MATCH;
+                    this.pool.push(eliminated);
+                    this.events.push("踢最小: " + eliminated.value);
+                }
+                
+                // 两两配对
+                for (var i = 0; i < singles.length; i += 2) {
+                    var p1 = singles[i];
+                    var p2 = singles[i + 1];
+                    
+                    if (p2) {
+                        // 配对成功
+                        p1.status = Status.MARRIED;
+                        p2.status = Status.MARRIED;
+                        p1.partner = p2;
+                        p2.partner = p1;
+                        this.married.push([p1, p2]);
+                        this.events.push("配对成功: " + p1.value + " <-> " + p2.value);
+                        this._record_pair_history(p1, p2);
+                        this._check_quarrel(p1, p2);
+                    }
+                }
+            }
+
+            _process_later_rounds() {
+                // 处理匹配池内配对（等待回合结束后才能配对）
+                this._process_pool_pairing();
+                
+                // 处理出轨（可能导致配对变化）
+                this._process_cheating();
+                
+                // 处理离婚倾向累加
+                this._process_divorce_trend();
+                
+                // 处理主表格内重新配对
+                this._process_main_table_repairing();
+            }
+            
+            // 处理离婚倾向
+            _process_divorce_trend() {
+                // 首先对所有已婚对增加自然增长
+                for (var i = 0; i < this.married.length; i++) {
+                    var pair = this.married[i];
+                    pair[0].divorce_trend += DIVORCE_NATURAL_GROWTH;
+                    pair[1].divorce_trend += DIVORCE_NATURAL_GROWTH;
+                }
+                
+                // 然后处理已经处于QUARREL_WAIT状态的配对
+                var toRemoveById = {};
+                var poolToAdd = [];
+                
+                for (var i = 0; i < this.married.length; i++) {
+                    var pair = this.married[i];
+                    var p1 = pair[0];
+                    var p2 = pair[1];
+                    
+                    if (p1.status === Status.QUARREL_WAIT || p2.status === Status.QUARREL_WAIT) {
+                        // 处于争吵等待状态，增加离婚倾向
+                        p1.divorce_trend += DIVORCE_TREND_INCREMENT;
+                        p2.divorce_trend += DIVORCE_TREND_INCREMENT;
+                        
+                        if (p1.divorce_trend >= 100 || p2.divorce_trend >= 100) {
+                            // 离婚倾向达到100%，立即离婚
+                            this.events.push("离婚!: " + p1.value + " <-> " + p2.value);
+                            
+                            // 标记要移除
+                            toRemoveById[p1.id + '-' + p2.id] = true;
+                            
+                            // 重置状态
+                            p1.status = Status.WAIT_TO_MATCH;
+                            p2.status = Status.WAIT_TO_MATCH;
+                            p1.partner = null;
+                            p2.partner = null;
+                            p1.divorce_trend = 0;
+                            p2.divorce_trend = 0;
+                            p1.quarrel_wait_rounds = 0;
+                            p2.quarrel_wait_rounds = 0;
+                            p1.divorced_this_round = true;
+                            p2.divorced_this_round = true;
+                            
+                            // 记录禁止配对
+                            p1.banned_with[p2.id] = this.round_number + PAIR_BAN_ROUNDS;
+                            p2.banned_with[p1.id] = this.round_number + PAIR_BAN_ROUNDS;
+                            
+                            // 添加到临时列表
+                            poolToAdd.push(p1);
+                            poolToAdd.push(p2);
+                        }
+                    }
+                }
+                
+                // 移除离婚的配对（使用ID匹配）
+                var toRemove = [];
+                for (var i = 0; i < this.married.length; i++) {
+                    var pair = this.married[i];
+                    var key = pair[0].id + '-' + pair[1].id;
+                    var keyReverse = pair[1].id + '-' + pair[0].id;
+                    if (toRemoveById[key] || toRemoveById[keyReverse]) {
+                        toRemove.push(i);
+                    }
+                }
+                toRemove.sort(function(a, b) { return b - a; });
+                for (var i = 0; i < toRemove.length; i++) {
+                    this.married.splice(toRemove[i], 1);
+                }
+                
+                // 添加到匹配池
+                for (var i = 0; i < poolToAdd.length; i++) {
+                    this.pool.push(poolToAdd[i]);
+                }
+            }
+            
+            // 检查某人是否被禁止配对
+            _is_banned(person1, person2) {
+                var banRound = person1.banned_with[person2.id];
+                if (!banRound) return false;
+                return this.round_number < banRound;
+            }
+            
+            // 记录配对历史并检查是否需要禁止
+            _record_pair_history(p1, p2) {
+                var currentRound = this.round_number;
+                
+                // 记录配对
+                p1.pair_history.push(currentRound);
+                p2.pair_history.push(currentRound);
+                
+                // 清理过期的配对记录（只保留最近4回合的）
+                p1.pair_history = p1.pair_history.filter(function(r) { return currentRound - r < PAIR_CHECK_ROUNDS; });
+                p2.pair_history = p2.pair_history.filter(function(r) { return currentRound - r < PAIR_CHECK_ROUNDS; });
+                
+                // 检查是否超过限制
+                if (p1.pair_history.length > PAIR_LIMIT || p2.pair_history.length > PAIR_LIMIT) {
+                    // 禁止在后续12回合内再度配对
+                    p1.banned_until_round = currentRound + PAIR_BAN_ROUNDS;
+                    p2.banned_until_round = currentRound + PAIR_BAN_ROUNDS;
+                    this.events.push("禁止配对: " + p1.value + " 和 " + p2.value + " 禁止 " + PAIR_BAN_ROUNDS + " 回合");
+                }
+            }
+
+            _process_pool_pairing() {
+                if (this.pool.length < 2) return;
+                
+                var toPair = [];
+                var remaining = [];
+                
+                for (var i = 0; i < this.pool.length; i++) {
+                    var p = this.pool[i];
+                    // 本回合刚离婚的人不能配对
+                    if (p.status === Status.WAIT_TO_MATCH && !p.divorced_this_round) {
+                        toPair.push(p);
+                    } else {
+                        remaining.push(p);
+                    }
+                }
+                
+                this.events.push("匹配池: 待配对" + toPair.length + "人, 非待配对" + remaining.length + "人");
+                
+                // 匹配池内两两配对
+                for ( var i = 0; i < toPair.length; i += 2) {
+                    var p1 = toPair[i];
+                    var p2 = toPair[i + 1];
+                    
+                    if (p2) {
+                        // 检查是否被禁止配对
+                        if (this._is_banned(p1, p2)) {
+                            // 被禁止配对，继续留在匹配池
+                            remaining.push(p1);
+                            remaining.push(p2);
+                            continue;
+                        }
+                        
+                        // 配对成功
+                        p1.status = Status.MARRIED;
+                        p2.status = Status.MARRIED;
+                        p1.partner = p2;
+                        p2.partner = p1;
+                        this.married.push([p1, p2]);
+                        this.events.push("匹配池配对成功: " + p1.value + " <-> " + p2.value);
+                        this._record_pair_history(p1, p2);
+                        this._check_quarrel(p1, p2);
+                    } else {
+                        // 无法配对，继续留在匹配池
+                        remaining.push(p1);
+                    }
+                }
+                
+                this.pool = remaining;
+            }
+
+            _process_main_table_repairing() {
+                // 检查所有已婚对，移除不完整的配对（一方已离婚或出轨）
+                var toRemove = [];
+                var toAddPool = [];
+                
+                for (var i = 0; i < this.married.length; i++) {
+                    var pair = this.married[i];
+                    var p1 = pair[0];
+                    var p2 = pair[1];
+                    
+                    // 检查配对是否完整：两人都应该是 MARRIED 或 QUARREL_WAIT 状态
+                    var p1IsInPair = p1.status === Status.MARRIED || p1.status === Status.QUARREL_WAIT;
+                    var p2IsInPair = p2.status === Status.MARRIED || p2.status === Status.QUARREL_WAIT;
+                    
+                    // 如果有一方不在配对状态中，说明配对破裂
+                    if (!p1IsInPair || !p2IsInPair) {
+                        toRemove.push(i);
+                        
+                        // 将处于 WAIT_TO_MATCH 状态的人加入池子
+                        if (p1.status === Status.WAIT_TO_MATCH) {
+                            toAddPool.push(p1);
+                        }
+                        if (p2.status === Status.WAIT_TO_MATCH) {
+                            toAddPool.push(p2);
+                        }
+                    }
+                }
+                
+                // 移除破裂的配对（从后往前移除，避免索引混乱）
+                toRemove.sort(function(a, b) { return b - a; });
+                for (var i = 0; i < toRemove.length; i++) {
+                    this.married.splice(toRemove[i], 1);
+                }
+                
+                // 添加到匹配池
+                for (var i = 0; i < toAddPool.length; i++) {
+                    this.pool.push(toAddPool[i]);
+                }
+            }
+
+            _check_quarrel(p1, p2) {
+                if (this.quarrel_quota <= 0) {
+                    // 本回合争吵配额已用完
+                    return;
+                }
+                
+                if (Math.random() < QUARREL_RATE) {
+                    p1.status = Status.QUARREL_WAIT;
+                    p2.status = Status.QUARREL_WAIT;
+                    p1.quarrel_wait_rounds = 2; // 当前回合和下一回合不参与
+                    p2.quarrel_wait_rounds = 2;
+                    this.events.push("争吵: " + p1.value + " <-> " + p2.value + " (等待2回合)");
+                    this.quarrel_quota--; // 减少配额
+                }
+            }
+
+            _process_cheating() {
+                var toRemoveById = {}; // 用ID标记要移除的配对
+                var newMarriedPairs = [];
+                
+                for (var i = 0; i < this.married.length; i++) {
+                    var pair = this.married[i];
+                    var p1 = pair[0];
+                    var p2 = pair[1];
+                    
+                    // 确定作弊者和受害者
+                    var cheater, victim;
+                    if (p1.value < p2.value) {
+                        cheater = p1;
+                        victim = p2;
+                    } else {
+                        cheater = p2;
+                        victim = p1;
+                    }
+                    
+                    if (cheater.value >= victim.value) continue;
+                    
+                    // 寻找第三者（从匹配池和其他已婚对中找最大的）
+                    var thirdParty = null;
+                    var maxValue = cheater.value;
+                    
+                    // 从匹配池中找
+                    for (var j = 0; j < this.pool.length; j++) {
+                        var p = this.pool[j];
+                        if (p.status === Status.WAIT_TO_MATCH && p.value > maxValue) {
+                            maxValue = p.value;
+                            thirdParty = p;
+                        }
+                    }
+                    
+                    // 从其他已婚对中找（找值最大的）
+                    for (var j = 0; j < this.married.length; j++) {
+                        if (j === i) continue;
+                        var otherPair = this.married[j];
+                        if (otherPair[0].value > maxValue) {
+                            maxValue = otherPair[0].value;
+                            thirdParty = otherPair[0];
+                        }
+                        if (otherPair[1].value > maxValue) {
+                            maxValue = otherPair[1].value;
+                            thirdParty = otherPair[1];
+                        }
+                    }
+                    
+                    if (!thirdParty) continue;
+                    
+                    if (Math.random() >= CHEATING_OUTSIDE_RATE) continue;
+                    
+                    this.events.push("出轨: " + cheater.value + " (受害者:" + victim.value + ") 被 " + thirdParty.value + " 吸引");
+                    
+                    if (Math.random() < DATING_SUCCESS_RATE) {
+                        this.events.push("约会成功: " + cheater.value + " 与 " + thirdParty.value + " 在一起");
+                        
+                        // 如果第三者在匹配池中，将其从匹配池中移除
+                        for (var j = this.pool.length - 1; j >= 0; j--) {
+                            if (this.pool[j].id === thirdParty.id) {
+                                this.pool.splice(j, 1);
+                            }
+                        }
+                        
+                        // 找到并标记thirdParty原来的配对
+                        for (var j = 0; j < this.married.length; j++) {
+                            if (j === i) continue;
+                            var otherPair = this.married[j];
+                            if (otherPair[0].id === thirdParty.id || otherPair[1].id === thirdParty.id) {
+                                toRemoveById[otherPair[0].id + '-' + otherPair[1].id] = true;
+                                break;
+                            }
+                        }
+                        
+                        // 标记当前配对要移除
+                        toRemoveById[p1.id + '-' + p2.id] = true;
+                        
+                        // 处理受害者
+                        victim.status = Status.WAIT_TO_MATCH;
+                        victim.partner = null;
+                        victim.divorced_this_round = true;
+                        
+                        // 处理作弊者
+                        cheater.status = Status.MARRIED;
+                        cheater.partner = thirdParty;
+                        
+                        // 处理第三者
+                        var thirdPartyPartner = thirdParty.partner;
+                        thirdParty.status = Status.MARRIED;
+                        thirdParty.partner = cheater;
+                        
+                        // 处理第三者原来的伴侣
+                        if (thirdPartyPartner && thirdPartyPartner.id !== cheater.id) {
+                            thirdPartyPartner.status = Status.WAIT_TO_MATCH;
+                            thirdPartyPartner.partner = null;
+                            thirdPartyPartner.divorced_this_round = true;
+                            
+                            // 添加到匹配池
+                            this.pool.push(thirdPartyPartner);
+                        }
+                        
+                        // 添加新的配对
+                        newMarriedPairs.push([cheater, thirdParty]);
+                        
+                        // 添加受害者到匹配池
+                        this.pool.push(victim);
+                    }
+                }
+                
+                // 移除离婚的配对（使用ID匹配）
+                var toRemove = [];
+                for (var i = 0; i < this.married.length; i++) {
+                    var pair = this.married[i];
+                    var key = pair[0].id + '-' + pair[1].id;
+                    var keyReverse = pair[1].id + '-' + pair[0].id;
+                    if (toRemoveById[key] || toRemoveById[keyReverse]) {
+                        toRemove.push(i);
+                    }
+                }
+                toRemove.sort(function(a, b) { return b - a; });
+                for (var i = 0; i < toRemove.length; i++) {
+                    this.married.splice(toRemove[i], 1);
+                }
+                
+                // 添加新的配对
+                for (var i = 0; i < newMarriedPairs.length; i++) {
+                    this.married.push(newMarriedPairs[i]);
+                }
+            }
+
+            _process_quarrel() {
+                // 现在争吵处理已经在 _check_quarrel 中设置 QUARREL_WAIT 状态
+                // 离婚倾向累加在 _process_divorce_trend 中处理
+            }
+
+            _check_sorting() {
+                if (this.married.length === 0) return;
+                
+                var allValues = [];
+                for (var i = 0; i < this.married.length; i++) {
+                    allValues.push(this.married[i][0].value);
+                    allValues.push(this.married[i][1].value);
+                }
+                
+                var ascending = true;
+                var descending = true;
+                
+                for (var i = 1; i < allValues.length; i++) {
+                    if (allValues[i] > allValues[i-1]) {
+                        descending = false;
+                    }
+                    if (allValues[i] < allValues[i-1]) {
+                        ascending = false;
+                    }
+                }
+                
+                if (ascending || descending) {
+                    this._sort_succeeded = true;
+                    this.events.push("排序成功! (" + (ascending ? "正序" : "倒序") + ") 值: " + allValues.join(", "));
+                }
+            }
+        }
+
+        var sorter = new MarriageOrDivorceSort();
+        var animationId = null, isPaused = false, currentStep = 0, speed = 1000;
+        var chartBars = {};
+        var poolElements = {};
+        var lastSorted = false;
+
+        var chart = document.getElementById('chart');
+        var poolArea = document.getElementById('poolArea');
+        var startBtn = document.getElementById('startBtn');
+        var pauseBtn = document.getElementById('pauseBtn');
+        var resetBtn = document.getElementById('resetBtn');
+        var dataCountInput = document.getElementById('dataCount');
+        var speedInput = document.getElementById('speed');
+        var roundNumEl = document.getElementById('roundNum');
+        var marriedCountEl = document.getElementById('marriedCount');
+        var poolCountEl = document.getElementById('poolCount');
+        var eliminatedCountEl = document.getElementById('eliminatedCount');
+        var marriedPairsEl = document.getElementById('marriedPairs');
+        var eventListEl = document.getElementById('eventList');
+        var flowSteps = document.querySelectorAll('.flow-step');
+
+        function renderChart(marriedData, isSorted, isAscending) {
+            chart.innerHTML = '';
+            chartBars = {};
+
+            if (!marriedData || marriedData.length === 0) return;
+
+            // Sort pairs for display
+            var sortedPairs = marriedData.slice();
+            sortedPairs.sort(function(a, b) {
+                var aMin = Math.min(a[0].value, a[1].value);
+                var bMin = Math.min(b[0].value, b[1].value);
+                if (isSorted && !isAscending) {
+                    return bMin - aMin;
+                }
+                return aMin - bMin;
+            });
+
+            var maxValue = 0;
+            sortedPairs.forEach(function(pair) {
+                maxValue = Math.max(maxValue, pair[0].value, pair[1].value);
+            });
+
+            chart.style.display = 'flex';
+            chart.style.alignItems = 'flex-end';
+            chart.style.gap = '16px';
+
+            sortedPairs.forEach(function(pair, pairIndex) {
+                // Create a container for the pair
+                var pairContainer = document.createElement('div');
+                pairContainer.className = 'pair-container';
+                if (!isSorted) {
+                    pairContainer.classList.add('paired');
+                }
+                pairContainer.style.display = 'flex';
+                pairContainer.style.alignItems = 'flex-end';
+                pairContainer.style.gap = '8px';
+                pairContainer.style.position = 'relative';
+                pairContainer.style.padding = '10px';
+                pairContainer.style.minWidth = '120px';
+
+                // Sort the pair internally (smaller on left)
+                var p1 = pair[0];
+                var p2 = pair[1];
+                if (p1.value > p2.value) {
+                    var temp = p1;
+                    p1 = p2;
+                    p2 = temp;
+                }
+
+                // Create first bar
+                var slot1 = document.createElement('div');
+                slot1.className = 'bar-slot';
+                slot1.style.width = '40px';
+                slot1.dataset.id = p1.id;
+
+                var bar1 = document.createElement('div');
+                bar1.className = 'bar ' + p1.status;
+                if (isSorted) {
+                    bar1.classList.add('success');
+                }
+                bar1.style.height = ((p1.value / maxValue) * 180 + 30) + 'px';
+                bar1.style.width = '100%';
+
+                var label1 = document.createElement('span');
+                label1.className = 'bar-value';
+                label1.textContent = p1.value;
+                bar1.appendChild(label1);
+
+                slot1.appendChild(bar1);
+                pairContainer.appendChild(slot1);
+                chartBars[p1.id] = { bar: bar1, slot: slot1, value: p1.value };
+
+                // Create second bar
+                var slot2 = document.createElement('div');
+                slot2.className = 'bar-slot';
+                slot2.style.width = '40px';
+                slot2.dataset.id = p2.id;
+
+                var bar2 = document.createElement('div');
+                bar2.className = 'bar ' + p2.status;
+                if (isSorted) {
+                    bar2.classList.add('success');
+                }
+                bar2.style.height = ((p2.value / maxValue) * 180 + 30) + 'px';
+                bar2.style.width = '100%';
+
+                var label2 = document.createElement('span');
+                label2.className = 'bar-value';
+                label2.textContent = p2.value;
+                bar2.appendChild(label2);
+
+                slot2.appendChild(bar2);
+                pairContainer.appendChild(slot2);
+                chartBars[p2.id] = { bar: bar2, slot: slot2, value: p2.value };
+
+                chart.appendChild(pairContainer);
+            });
+        }
+
+        function playSuccessGlowAnimation(isAscending) {
+            var bars = chart.querySelectorAll('.bar');
+            if (bars.length === 0) return;
+            
+            var indices = [];
+            for (var i = 0; i < bars.length; i++) {
+                indices.push(i);
+            }
+            
+            // If descending, reverse the order
+            if (!isAscending) {
+                indices.reverse();
+            }
+            
+            // Remove any existing glowing classes
+            bars.forEach(function(bar) {
+                bar.classList.remove('glowing');
+            });
+            
+            // Animate each bar one by one
+            indices.forEach(function(index, i) {
+                setTimeout(function() {
+                    var bar = bars[index];
+                    if (bar) {
+                        bar.classList.add('glowing');
+                        // Remove glowing class after animation completes
+                        setTimeout(function() {
+                            bar.classList.remove('glowing');
+                        }, 800);
+                    }
+                }, i * 150);
+            });
+        }
+
+        function updateChart(marriedData, isSorted, isAscending) {
+            renderChart(marriedData, isSorted, isAscending);
+        }
+
+        function renderPool(poolData, eliminatedData) {
+            poolArea.innerHTML = '';
+            poolElements = {};
+            var seenIds = {};
+
+            // 渲染匹配池中的人
+            poolData.forEach(function(p) {
+                if (!seenIds[p.id]) {
+                    seenIds[p.id] = true;
+                    var item = document.createElement('div');
+                    item.className = 'pool-item wait';
+                    item.textContent = p.value;
+                    item.dataset.id = p.id;
+                    poolArea.appendChild(item);
+                    poolElements[p.id] = item;
+                }
+            });
+
+            // 渲染被淘汰的人
+            eliminatedData.forEach(function(p) {
+                if (!seenIds[p.id]) {
+                    seenIds[p.id] = true;
+                    var item = document.createElement('div');
+                    item.className = 'pool-item eliminated';
+                    item.textContent = p.value;
+                    item.dataset.id = p.id;
+                    poolArea.appendChild(item);
+                    poolElements[p.id] = item;
+                }
+            });
+        }
+
+        function updateStats(data) {
+            roundNumEl.textContent = data.round || 0;
+            marriedCountEl.textContent = data.married ? data.married.length : 0;
+            poolCountEl.textContent = data.pool ? data.pool.length : 0;
+            eliminatedCountEl.textContent = data.eliminated ? data.eliminated.length : 0;
+            if (data.married && data.married.length > 0) {
+                marriedPairsEl.innerHTML = data.married.map(function(pair) {
+                    return '<div class="pair"><span class="pair-value">' + pair[0].value + '</span>-<span class="pair-value">' + pair[1].value + '</span></div>';
+                }).join('');
+            } else {
+                marriedPairsEl.innerHTML = '<span style="color: #666; font-size: 0.85rem;">No pairs yet</span>';
+            }
+        }
+
+        function updateEvents(newEvents) {
+            if (newEvents && newEvents.length > 0) {
+                newEvents.forEach(function(e) {
+                    var className = 'event-item';
+                    if (e.indexOf('success') !== -1 || e.indexOf('SORTED') !== -1) className += ' new';
+                    else if (e.indexOf('fail') !== -1 || e.indexOf('Breakup') !== -1) className += ' error';
+                    else if (e.indexOf('Quarrel') !== -1 || e.indexOf('Cheating') !== -1) className += ' warning';
+                    var div = document.createElement('div');
+                    div.className = className;
+                    div.textContent = e;
+                    eventListEl.insertBefore(div, eventListEl.firstChild);
+                });
+            }
+            while (eventListEl.children.length > 30) {
+                eventListEl.removeChild(eventListEl.lastChild);
+            }
+        }
+
+        function setActiveStep(step) {
+            flowSteps.forEach(function(el, i) { el.classList.toggle('active', i === step); });
+        }
+
+        function runStep() {
+            if (isPaused) return;
+            if (sorter._sort_succeeded) {
+                setActiveStep(-1);
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                return;
+            }
+            setActiveStep(currentStep % 7);
+            var result = sorter.step();
+            
+            // Check if sorted and determine order
+            var isSorted = result.sortSucceeded;
+            var isAscending = true;
+            if (result.married && result.married.length > 0) {
+                var allValues = [];
+                result.married.forEach(function(pair) {
+                    allValues.push(pair[0].value, pair[1].value);
+                });
+                // Check if sorted
+                var ascending = true, descending = true;
+                for (var i = 1; i < allValues.length; i++) {
+                    if (allValues[i] > allValues[i-1]) descending = false;
+                    if (allValues[i] < allValues[i-1]) ascending = false;
+                }
+                var displaySorted = ascending || descending;
+                isAscending = ascending;
+            }
+            
+            updateChart(result.married, isSorted, isAscending);
+            renderPool(result.pool, result.eliminated);
+            updateStats(result);
+            updateEvents(result.newEvents);
+            
+            // Check if this is the first time sorted
+            if (result.sortSucceeded && !lastSorted) {
+                playSuccessGlowAnimation(isAscending);
+            }
+            lastSorted = result.sortSucceeded;
+            
+            currentStep++;
+            if (result.sortSucceeded) {
+                setActiveStep(-1);
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                return;
+            }
+            animationId = setTimeout(runStep, speed);
+        }
+
+        startBtn.addEventListener('click', function() {
+            var n = parseInt(dataCountInput.value) || 12;
+            speed = parseInt(speedInput.value) || 1000;
+            sorter = new MarriageOrDivorceSort();
+            sorter.generate_data(n);
+            currentStep = 0;
+            isPaused = false;
+            lastSorted = false;
+            chart.innerHTML = '';
+            chartBars = {};
+            poolArea.innerHTML = '';
+            poolElements = {};
+            updateStats({ round: 0, married: [], pool: [], eliminated: [] });
+            updateEvents(['Starting...']);
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            runStep();
+        });
+
+        pauseBtn.addEventListener('click', function() {
+            isPaused = !isPaused;
+            pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
+            if (!isPaused) { runStep(); }
+        });
+
+        resetBtn.addEventListener('click', function() {
+            clearTimeout(animationId);
+            sorter = new MarriageOrDivorceSort();
+            currentStep = 0;
+            isPaused = false;
+            lastSorted = false;
+            chart.innerHTML = '';
+            chartBars = {};
+            poolArea.innerHTML = '';
+            poolElements = {};
+            roundNumEl.textContent = '0';
+            marriedCountEl.textContent = '0';
+            poolCountEl.textContent = '0';
+            eliminatedCountEl.textContent = '0';
+            marriedPairsEl.innerHTML = '<span style="color: #666; font-size: 0.85rem;">No pairs yet</span>';
+            eventListEl.innerHTML = '';
+            flowSteps.forEach(function(el) { el.classList.remove('active'); });
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            pauseBtn.textContent = 'Pause';
+        });
+        
+        // Help modal functionality
+        var helpIcon = document.getElementById('helpIcon');
+        var helpModal = document.getElementById('helpModal');
+        var modalClose = document.getElementById('modalClose');
+        
+        helpIcon.addEventListener('click', function() {
+            helpModal.classList.add('active');
+        });
+        
+        modalClose.addEventListener('click', function() {
+            helpModal.classList.remove('active');
+        });
+        
+        // Close modal when clicking outside
+        helpModal.addEventListener('click', function(e) {
+            if (e.target === helpModal) {
+                helpModal.classList.remove('active');
+            }
+        });
+        
+        // Close modal with ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && helpModal.classList.contains('active')) {
+                helpModal.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
