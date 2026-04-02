@@ -12,8 +12,12 @@
             min-height: 100vh;
             color: #fff;
             padding: 20px;
+            overflow-x: hidden; /* 防止页面横向超出 */
         }
-        .container { max-width: 1200px; margin: 0 auto; }
+        .container {
+            max-width: 1400px; /* 增加最大宽度 */
+            margin: 0 auto;
+        }
         h1 {
             text-align: center;
             font-size: 2rem;
@@ -57,14 +61,58 @@
         .btn-secondary:hover { background: #444; }
         .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        .main-display { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
-        .left-panel { display: flex; flex-direction: column; gap: 20px; }
+        .main-display {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+        }
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 0; /* 允许子元素滚动 */
+        }
+        
+        /* 响应式布局 */
+        @media (max-width: 1200px) {
+            .main-display {
+                grid-template-columns: 1fr;
+            }
+            .left-panel {
+                order: 1;
+            }
+            .right-panel {
+                order: 2;
+            }
+        }
 
         .chart-container, .pool-container, .status-panel, .flowchart, .event-log {
             background: #1e1e3f;
             border-radius: 16px;
             padding: 20px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        
+        /* 图表容器添加横向滚动条 */
+        .chart-container {
+            overflow-x: auto;
+            max-width: 100%;
+        }
+        
+        /* 自定义滚动条样式 */
+        .chart-container::-webkit-scrollbar {
+            height: 10px;
+        }
+        .chart-container::-webkit-scrollbar-track {
+            background: #151530;
+            border-radius: 5px;
+        }
+        .chart-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 5px;
+        }
+        .chart-container::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #764ba2, #667eea);
         }
         .chart-title, .pool-title, .flowchart-title, .event-log-title {
             font-size: 1rem;
@@ -76,17 +124,18 @@
         .chart {
             display: flex;
             align-items: flex-end;
-            justify-content: center;
+            justify-content: flex-start; /* 改为左对齐，适合滚动 */
             height: 250px;
             gap: 8px;
             padding: 20px 10px;
             background: #151530;
             border-radius: 12px;
             position: relative;
+            min-width: min-content; /* 确保内容可以自然扩展 */
         }
         .bar-slot {
-            flex: 1;
-            max-width: 80px;
+            flex: 0 0 auto; /* 不伸缩，固定宽度 */
+            width: 50px; /* 固定宽度，数值多时也可以滚动查看 */
             height: 100%;
             position: relative;
             display: flex;
@@ -702,16 +751,51 @@
 
             generate_data(n, minVal = 1, maxVal = 100) {
                 this.people = [];
+                // 检查范围是否足够
+                var rangeSize = maxVal - minVal + 1;
+                if (n > rangeSize) {
+                    console.error("无法生成 " + n + " 个不重复的值在范围 [" + minVal + ", " + maxVal + "] 内");
+                    return this.people;
+                }
+                
                 // 生成不重复的随机数
                 var usedValues = {};
-                for (let i = 0; i < n; i++) {
-                    var value;
-                    do {
-                        value = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
-                    } while (usedValues[value]);
-                    usedValues[value] = true;
-                    this.people.push(new Person(value));
+                var values = [];
+                
+                // 方法 1: 如果 n 小于范围的 70%，使用 Fisher-Yates 洗牌
+                if (n <= rangeSize * 0.7) {
+                    // 创建所有可能的值
+                    for (var v = minVal; v <= maxVal; v++) {
+                        values.push(v);
+                    }
+                    // 洗牌
+                    for (var i = values.length - 1; i > 0; i--) {
+                        var j = Math.floor(Math.random() * (i + 1));
+                        var temp = values[i];
+                        values[i] = values[j];
+                        values[j] = temp;
+                    }
+                    // 取前 n 个
+                    values = values.slice(0, n);
+                } else {
+                    // 方法 2: 使用集合跟踪
+                    var attempts = 0;
+                    var maxAttempts = n * 10;
+                    while (values.length < n && attempts < maxAttempts) {
+                        var value = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
+                        if (!usedValues[value]) {
+                            usedValues[value] = true;
+                            values.push(value);
+                        }
+                        attempts++;
+                    }
                 }
+                
+                // 创建 Person 对象
+                for (var i = 0; i < values.length; i++) {
+                    this.people.push(new Person(values[i]));
+                }
+                
                 return this.people;
             }
 
@@ -937,6 +1021,10 @@
                 
                 for (var i = 0; i < this.pool.length; i++) {
                     var p = this.pool[i];
+                    // 确保池中的人状态正确
+                    if (p.status !== Status.WAIT_TO_MATCH) {
+                        p.status = Status.WAIT_TO_MATCH;
+                    }
                     // 本回合刚离婚的人不能配对
                     if (p.status === Status.WAIT_TO_MATCH && !p.divorced_this_round) {
                         toPair.push(p);
@@ -945,7 +1033,7 @@
                     }
                 }
                 
-                this.events.push("匹配池: 待配对" + toPair.length + "人, 非待配对" + remaining.length + "人");
+                this.events.push("匹配池：待配对" + toPair.length + "人，非待配对" + remaining.length + "人");
                 
                 // 匹配池内两两配对
                 for ( var i = 0; i < toPair.length; i += 2) {
@@ -1073,6 +1161,7 @@
                     for (var j = 0; j < this.married.length; j++) {
                         if (j === i) continue;
                         var otherPair = this.married[j];
+                        // 严格大于当前最大值，避免重复值
                         if (otherPair[0].value > maxValue) {
                             maxValue = otherPair[0].value;
                             thirdParty = otherPair[0];
@@ -1084,6 +1173,9 @@
                     }
                     
                     if (!thirdParty) continue;
+                    
+                    // 第三者必须严格大于作弊者（避免相同值）
+                    if (thirdParty.value <= cheater.value) continue;
                     
                     if (Math.random() >= CHEATING_OUTSIDE_RATE) continue;
                     
